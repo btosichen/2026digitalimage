@@ -1,637 +1,693 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Terminal, Cpu, Grid, Eye, Save, Lock, CheckCircle, Monitor, Play, RotateCcw, Award, Mail, Send } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIT_LAB 數位影像實驗室</title>
+    
+    <!-- 1. 引入 React 核心 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- 2. 引入 Babel (讓瀏覽器看懂 JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 3. 引入 Tailwind CSS (美化樣式) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 4. 設定字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
 
-// --- 模擬後端：Google Apps Script URL ---
-// 若您有部署 GAS，請填入 URL。若無，系統會模擬寄信過程。
-const GAS_URL = ""; 
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        
+        /* 自定義樣式補充 */
+        .pixel-grid { display: grid; gap: 2px; background-color: #e2e8f0; border: 4px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+        .pixel-cell { cursor: pointer; transition: all 0.1s; }
+        .pixel-cell:hover { transform: scale(0.95); border-radius: 4px; }
+        .fun-input {
+            background: #ffffff; border: 2px solid #cbd5e1; color: #334155;
+            padding: 0.75rem; border-radius: 0.75rem; width: 100%;
+            transition: all 0.2s;
+        }
+        .fun-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        .fun-card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        .fun-btn { transition: transform 0.1s; }
+        .fun-btn:active { transform: scale(0.95); }
+        
+        /* Toast 動畫 */
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .animate-shake { animation: shake 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-blue-50 text-slate-800">
+    <div id="root"></div>
 
-export default function App() {
-    // 遊戲狀態：-1:登入, 0-5:主線關卡, 6:測驗關, 7:結算
-    const [level, setLevel] = useState(-1);
-    const [userInfo, setUserInfo] = useState({ classCode: '', seatNo: '', name: '', email: '' });
-    const [gameData, setGameData] = useState([]);
-    const [totalScore, setTotalScore] = useState(0);
-    const [toast, setToast] = useState(null);
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-    // 顯示提示訊息
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3000);
-    };
+        // --- 內建圖示元件 (解決 CDN 載入不穩定的問題) ---
+        // 這些元件直接使用 SVG 繪製，不依賴外部庫
+        const IconBase = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
 
-    // 更新分數
-    const addScore = (points) => {
-        setTotalScore(prev => prev + points);
-        showToast(`獲得 ${points} 分！`, 'score');
-    };
-
-    // 統一資料上傳與記錄
-    const submitLevelData = async (levelIndex, details, points = 0) => {
-        if (points > 0) addScore(points);
-
-        const payload = {
-            timestamp: new Date().toISOString(),
-            student: `${userInfo.classCode}-${userInfo.seatNo}`,
-            name: userInfo.name,
-            level: levelIndex,
-            scoreObtained: points,
-            ...details
+        const Icons = {
+            Terminal: (props) => <IconBase {...props}><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></IconBase>,
+            Cpu: (props) => <IconBase {...props}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></IconBase>,
+            Grid: (props) => <IconBase {...props}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></IconBase>,
+            Eye: (props) => <IconBase {...props}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></IconBase>,
+            Save: (props) => <IconBase {...props}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></IconBase>,
+            Lock: (props) => <IconBase {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></IconBase>,
+            CheckCircle: (props) => <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>,
+            Monitor: (props) => <IconBase {...props}><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></IconBase>,
+            Play: (props) => <IconBase {...props}><polygon points="5 3 19 12 5 21 5 3"/></IconBase>,
+            RotateCcw: (props) => <IconBase {...props}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></IconBase>,
+            Award: (props) => <IconBase {...props}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></IconBase>,
+            Mail: (props) => <IconBase {...props}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></IconBase>,
+            Send: (props) => <IconBase {...props}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></IconBase>
         };
 
-        console.log(`📤 [Level ${levelIndex} Data]`, payload);
-        setGameData(prev => [...prev, payload]);
+        const { Terminal, Cpu, Grid, Eye, Save, Lock, CheckCircle, Monitor, Play, RotateCcw, Award, Mail, Send } = Icons;
 
-        // 若有 GAS_URL 可在此 fetch
-    };
+        // --- 模擬後端：Google Apps Script URL ---
+        const GAS_URL = ""; 
 
-    const nextLevel = () => setLevel(l => l + 1);
+        const App = () => {
+            // 遊戲狀態：-1:登入, 0-5:主線關卡, 6:測驗關, 7:結算
+            const [level, setLevel] = useState(-1);
+            const [userInfo, setUserInfo] = useState({ classCode: '', seatNo: '', name: '', email: '' });
+            const [gameData, setGameData] = useState([]);
+            const [totalScore, setTotalScore] = useState(0);
+            const [toast, setToast] = useState(null);
 
-    // 活潑風格配色：背景改為明亮的 blue-50，文字深色，按鈕高彩度
-    return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-blue-50 font-sans text-slate-800 transition-colors duration-500">
-            <style>{`
-                .pixel-grid { display: grid; gap: 2px; background-color: #e2e8f0; border: 4px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
-                .pixel-cell { cursor: pointer; transition: all 0.1s; }
-                .pixel-cell:hover { transform: scale(0.95); border-radius: 4px; }
-                .fun-input {
-                    background: #ffffff; border: 2px solid #cbd5e1; color: #334155;
-                    padding: 0.75rem; border-radius: 0.75rem; width: 100%;
-                    transition: all 0.2s;
-                }
-                .fun-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
-                .fun-card { background: white; border-radius: 1.5rem; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-                .fun-btn { transition: transform 0.1s; }
-                .fun-btn:active { transform: scale(0.95); }
-                
-                /* Toast 動畫 */
-                @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-            `}</style>
+            // 顯示提示訊息
+            const showToast = (msg, type = 'success') => {
+                setToast({ msg, type });
+                setTimeout(() => setToast(null), 3000);
+            };
 
-            {/* 背景裝飾：漂浮的幾何圖形 */}
-            <div className="absolute top-10 left-10 text-blue-200 opacity-50 animate-bounce"><Grid size={64}/></div>
-            <div className="absolute bottom-10 right-10 text-orange-200 opacity-50 animate-pulse"><Cpu size={80}/></div>
-            <div className="absolute top-1/2 left-10 text-pink-200 opacity-30 rotate-12"><Save size={48}/></div>
+            // 更新分數
+            const addScore = (points) => {
+                setTotalScore(prev => prev + points);
+                showToast(`獲得 ${points} 分！`, 'score');
+            };
 
-            {/* Toast System */}
-            {toast && (
-                <div className={`fixed top-5 right-5 z-50 px-6 py-4 rounded-xl shadow-xl border-l-8 transform transition-all animate-[slideIn_0.3s_ease-out] flex items-center gap-3 font-bold
-                    ${toast.type === 'success' ? 'bg-white border-green-400 text-green-700' : 
-                      toast.type === 'error' ? 'bg-white border-red-400 text-red-700' :
-                      'bg-white border-yellow-400 text-orange-600'}`}> 
-                    {toast.type === 'score' && <Award className="text-yellow-500" />}
-                    {toast.msg}
-                </div>
-            )}
+            // 統一資料上傳與記錄
+            const submitLevelData = async (levelIndex, details, points = 0) => {
+                if (points > 0) addScore(points);
 
-            {/* Header */}
-            <header className="w-full max-w-5xl flex justify-between items-center mb-6 z-10 bg-white/80 backdrop-blur px-6 py-3 rounded-2xl shadow-sm border border-white">
-                <div className="flex items-center gap-3 text-indigo-600">
-                    <div className="bg-indigo-100 p-2 rounded-lg"><Terminal size={24} /></div>
-                    <h1 className="text-xl font-extrabold tracking-tight">BIT_LAB <span className="text-indigo-400 font-medium">// 數位影像實驗室</span></h1>
-                </div>
-                <div className="flex gap-6 text-sm font-medium text-slate-500 items-center">
-                    {userInfo.name && <span className="hidden md:inline-block bg-slate-100 px-3 py-1 rounded-full">學員：{userInfo.name}</span>}
-                    {level >= 0 && (
-                        <div className="flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-1.5 rounded-full shadow-inner">
-                            <Award size={18} />
-                            <span className="font-bold text-lg">{totalScore}</span> <span className="text-xs opacity-75">PTS</span>
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    student: `${userInfo.classCode}-${userInfo.seatNo}`,
+                    name: userInfo.name,
+                    level: levelIndex,
+                    scoreObtained: points,
+                    ...details
+                };
+
+                console.log(`📤 [Level ${levelIndex} Data]`, payload);
+                setGameData(prev => [...prev, payload]);
+            };
+
+            const nextLevel = () => setLevel(l => l + 1);
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden transition-colors duration-500">
+                    {/* 背景裝飾：漂浮的幾何圖形 */}
+                    <div className="absolute top-10 left-10 text-blue-200 opacity-50 animate-bounce"><Grid size={64}/></div>
+                    <div className="absolute bottom-10 right-10 text-orange-200 opacity-50 animate-pulse"><Cpu size={80}/></div>
+                    <div className="absolute top-1/2 left-10 text-pink-200 opacity-30 rotate-12"><Save size={48}/></div>
+
+                    {/* Toast System */}
+                    {toast && (
+                        <div className={`fixed top-5 right-5 z-50 px-6 py-4 rounded-xl shadow-xl border-l-8 transform transition-all animate-[slideIn_0.3s_ease-out] flex items-center gap-3 font-bold
+                            ${toast.type === 'success' ? 'bg-white border-green-400 text-green-700' : 
+                            toast.type === 'error' ? 'bg-white border-red-400 text-red-700' :
+                            'bg-white border-yellow-400 text-orange-600'}`}> 
+                            {toast.type === 'score' && <Award className="text-yellow-500" />}
+                            {toast.msg}
                         </div>
                     )}
+
+                    {/* Header */}
+                    <header className="w-full max-w-5xl flex justify-between items-center mb-6 z-10 bg-white/80 backdrop-blur px-6 py-3 rounded-2xl shadow-sm border border-white">
+                        <div className="flex items-center gap-3 text-indigo-600">
+                            <div className="bg-indigo-100 p-2 rounded-lg"><Terminal size={24} /></div>
+                            <h1 className="text-xl font-extrabold tracking-tight">BIT_LAB <span className="text-indigo-400 font-medium">// 數位影像實驗室</span></h1>
+                        </div>
+                        <div className="flex gap-6 text-sm font-medium text-slate-500 items-center">
+                            {userInfo.name && <span className="hidden md:inline-block bg-slate-100 px-3 py-1 rounded-full">學員：{userInfo.name}</span>}
+                            {level >= 0 && (
+                                <div className="flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-1.5 rounded-full shadow-inner">
+                                    <Award size={18} />
+                                    <span className="font-bold text-lg">{totalScore}</span> <span className="text-xs opacity-75">PTS</span>
+                                </div>
+                            )}
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="w-full max-w-5xl fun-card p-8 z-10 min-h-[600px] flex flex-col relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                        
+                        {level === -1 && <LoginScreen onLogin={(info) => { setUserInfo(info); setLevel(0); }} />}
+                        {level === 0 && <Level0_Resolution onNext={nextLevel} onSubmit={submitLevelData} />}
+                        {level === 1 && <Level1_PixelArt onNext={nextLevel} onSubmit={submitLevelData} />}
+                        {level === 2 && <Level2_Binary onNext={nextLevel} onSubmit={submitLevelData} />}
+                        {level === 3 && <Level3_ColorDepth onNext={nextLevel} onSubmit={submitLevelData} />}
+                        {level === 4 && <Level4_RLE onNext={nextLevel} onSubmit={submitLevelData} />}
+                        {level === 5 && <Level5_Boss onNext={nextLevel} onSubmit={submitLevelData} />}
+                        {level === 6 && <Level6_Quiz onNext={nextLevel} onSubmit={submitLevelData} />}
+                        {level === 7 && <EndScreen userInfo={userInfo} score={totalScore} gameData={gameData} showToast={showToast} />}
+
+                    </main>
+
+                    <footer className="mt-8 text-slate-400 text-sm font-medium text-center z-10">
+                        Designed for CS Education • 台北市立陽明高中
+                    </footer>
                 </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="w-full max-w-5xl fun-card p-8 z-10 min-h-[600px] flex flex-col relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-                
-                {level === -1 && <LoginScreen onLogin={(info) => { setUserInfo(info); setLevel(0); }} />}
-                {level === 0 && <Level0_Resolution onNext={nextLevel} onSubmit={submitLevelData} />}
-                {level === 1 && <Level1_PixelArt onNext={nextLevel} onSubmit={submitLevelData} />}
-                {level === 2 && <Level2_Binary onNext={nextLevel} onSubmit={submitLevelData} />}
-                {level === 3 && <Level3_ColorDepth onNext={nextLevel} onSubmit={submitLevelData} />}
-                {level === 4 && <Level4_RLE onNext={nextLevel} onSubmit={submitLevelData} />}
-                {level === 5 && <Level5_Boss onNext={nextLevel} onSubmit={submitLevelData} />}
-                {level === 6 && <Level6_Quiz onNext={nextLevel} onSubmit={submitLevelData} />}
-                {level === 7 && <EndScreen userInfo={userInfo} score={totalScore} gameData={gameData} showToast={showToast} />}
-
-            </main>
-
-            <footer className="mt-8 text-slate-400 text-sm font-medium text-center z-10">
-                Designed for CS Education • 台北市立陽明高中
-            </footer>
-        </div>
-    );
-};
-
-// --- Login Screen (Updated) ---
-const LoginScreen = ({ onLogin }) => {
-    const [formData, setFormData] = useState({ classCode: '', seatNo: '', name: '', email: '' });
-
-    const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if(Object.values(formData).every(v => v)) {
-            onLogin(formData);
-        }
-    };
-
-    return (
-        <div className="flex flex-col items-center justify-center h-full space-y-8 animate-[slideIn_0.5s_ease-out]">
-            <div className="text-center space-y-3">
-                <div className="bg-indigo-100 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg rotate-3 hover:rotate-6 transition-transform">
-                    <Cpu size={48} className="text-indigo-600" />
-                </div>
-                <h2 className="text-4xl font-extrabold text-slate-800">學員報到</h2>
-                <p className="text-slate-500 text-lg">輸入資料以啟動實驗紀錄系統</p>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">班級 (例: 702)</label>
-                        <input name="classCode" type="text" className="fun-input" placeholder="702" onChange={handleChange} required />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">座號</label>
-                        <input name="seatNo" type="number" className="fun-input" placeholder="15" onChange={handleChange} required />
-                    </div>
-                </div>
-                <div>
-                    <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">真實姓名</label>
-                    <input name="name" type="text" className="fun-input" placeholder="王小明" onChange={handleChange} required />
-                </div>
-                <div>
-                    <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">電子信箱 (寄送成績用)</label>
-                    <input name="email" type="email" className="fun-input" placeholder="student@example.com" onChange={handleChange} required />
-                </div>
-                <button type="submit" className="fun-btn w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 text-lg mt-4">
-                    <Play size={20} fill="currentColor" /> 開始闖關
-                </button>
-            </form>
-        </div>
-    );
-};
-
-// --- Level 0: Resolution ---
-const Level0_Resolution = ({ onNext, onSubmit }) => {
-    const [res, setRes] = useState(10);
-    const canvasRef = useRef(null);
-    const imgSrc = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23fca5a5'/%3E%3Ccircle cx='200' cy='200' r='100' fill='%23fde047'/%3E%3Crect x='150' y='150' width='30' height='30' fill='%231e293b'/%3E%3Crect x='220' y='150' width='30' height='30' fill='%231e293b'/%3E%3Cpath d='M 150 250 Q 200 300 250 250' stroke='%231e293b' stroke-width='10' fill='none'/%3E%3C/svg%3E";
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if(!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        img.src = imgSrc;
-        img.onload = () => {
-            const w = canvas.width;
-            const h = canvas.height;
-            const pixelSize = Math.max(1, Math.floor(40 - (res * 0.4) + 1));
-            ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(img, 0, 0, w / pixelSize, h / pixelSize);
-            ctx.drawImage(canvas, 0, 0, w / pixelSize, h / pixelSize, 0, 0, w, h);
-            
-            if (pixelSize > 5) {
-                ctx.strokeStyle = "rgba(0,0,0,0.1)";
-                ctx.beginPath();
-                for(let x=0; x<=w; x+=pixelSize) { ctx.moveTo(x,0); ctx.lineTo(x,h); }
-                for(let y=0; y<=h; y+=pixelSize) { ctx.moveTo(0,y); ctx.lineTo(w,y); }
-                ctx.stroke();
-            }
+            );
         };
-    }, [res]);
 
-    return (
-        <div className="flex flex-col h-full gap-6">
-            <div className="flex justify-between items-start border-b border-slate-100 pb-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Level 0</span>
-                        <h2 className="text-2xl font-bold text-slate-800">人眼 vs 電腦</h2>
+        // --- Login Screen ---
+        const LoginScreen = ({ onLogin }) => {
+            const [formData, setFormData] = useState({ classCode: '', seatNo: '', name: '', email: '' });
+
+            const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if(Object.values(formData).every(v => v)) {
+                    onLogin(formData);
+                }
+            };
+
+            return (
+                <div className="flex flex-col items-center justify-center h-full space-y-8 animate-[slideIn_0.5s_ease-out]">
+                    <div className="text-center space-y-3">
+                        <div className="bg-indigo-100 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg rotate-3 hover:rotate-6 transition-transform">
+                            <Cpu size={48} className="text-indigo-600" />
+                        </div>
+                        <h2 className="text-4xl font-extrabold text-slate-800">學員報到</h2>
+                        <p className="text-slate-500 text-lg">輸入資料以啟動實驗紀錄系統</p>
                     </div>
-                    <p className="text-slate-500">電腦看到的不是「圖」，是格子。拖動滑桿體驗電腦的視角。</p>
+                    
+                    <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">班級 (例: 702)</label>
+                                <input name="classCode" type="text" className="fun-input" placeholder="702" onChange={handleChange} required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">座號</label>
+                                <input name="seatNo" type="number" className="fun-input" placeholder="15" onChange={handleChange} required />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">真實姓名</label>
+                            <input name="name" type="text" className="fun-input" placeholder="王小明" onChange={handleChange} required />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-600 mb-1 ml-1">電子信箱 (寄送成績用)</label>
+                            <input name="email" type="email" className="fun-input" placeholder="student@example.com" onChange={handleChange} required />
+                        </div>
+                        <button type="submit" className="fun-btn w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 text-lg mt-4">
+                            <Play size={20} fill="currentColor" /> 開始闖關
+                        </button>
+                    </form>
                 </div>
-                <div className="text-right">
-                    <span className="text-sm font-bold text-slate-400 block">過關獎勵</span>
-                    <span className="text-xl font-bold text-indigo-600">+10 分</span>
+            );
+        };
+
+        // --- Level 0: Resolution ---
+        const Level0_Resolution = ({ onNext, onSubmit }) => {
+            const [res, setRes] = useState(10);
+            const canvasRef = useRef(null);
+            const imgSrc = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23fca5a5'/%3E%3Ccircle cx='200' cy='200' r='100' fill='%23fde047'/%3E%3Crect x='150' y='150' width='30' height='30' fill='%231e293b'/%3E%3Crect x='220' y='150' width='30' height='30' fill='%231e293b'/%3E%3Cpath d='M 150 250 Q 200 300 250 250' stroke='%231e293b' stroke-width='10' fill='none'/%3E%3C/svg%3E";
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if(!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                img.src = imgSrc;
+                img.onload = () => {
+                    const w = canvas.width;
+                    const h = canvas.height;
+                    const pixelSize = Math.max(1, Math.floor(40 - (res * 0.4) + 1));
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(img, 0, 0, w / pixelSize, h / pixelSize);
+                    ctx.drawImage(canvas, 0, 0, w / pixelSize, h / pixelSize, 0, 0, w, h);
+                    
+                    if (pixelSize > 5) {
+                        ctx.strokeStyle = "rgba(0,0,0,0.1)";
+                        ctx.beginPath();
+                        for(let x=0; x<=w; x+=pixelSize) { ctx.moveTo(x,0); ctx.lineTo(x,h); }
+                        for(let y=0; y<=h; y+=pixelSize) { ctx.moveTo(0,y); ctx.lineTo(w,y); }
+                        ctx.stroke();
+                    }
+                };
+            }, [res]);
+
+            return (
+                <div className="flex flex-col h-full gap-6">
+                    <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Level 0</span>
+                                <h2 className="text-2xl font-bold text-slate-800">人眼 vs 電腦</h2>
+                            </div>
+                            <p className="text-slate-500">電腦看到的不是「圖」，是格子。拖動滑桿體驗電腦的視角。</p>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-sm font-bold text-slate-400 block">過關獎勵</span>
+                            <span className="text-xl font-bold text-indigo-600">+10 分</span>
+                        </div>
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col md:flex-row gap-8 items-center justify-center">
+                        <div className="border-8 border-slate-200 rounded-2xl overflow-hidden shadow-xl bg-white">
+                            <canvas ref={canvasRef} width={300} height={300} className="block"></canvas>
+                        </div>
+                        
+                        <div className="w-full md:w-1/3 space-y-6 bg-slate-50 p-6 rounded-2xl">
+                            <div className="space-y-2">
+                                <label className="flex justify-between text-sm font-bold text-slate-700">
+                                    <span>馬賽克化</span>
+                                    <span>清晰度</span>
+                                </label>
+                                <input type="range" min="1" max="100" value={res} onChange={(e)=>setRes(parseInt(e.target.value))} 
+                                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                            </div>
+
+                            <div className="text-center p-4 bg-white rounded-xl shadow-sm border border-slate-100">
+                                <p className="text-sm text-slate-500 mb-1">目前模擬</p>
+                                <p className="text-2xl font-bold text-indigo-600 font-mono">{Math.floor(res/10)}x{Math.floor(res/10)} 網格</p>
+                            </div>
+
+                            <button onClick={() => { onSubmit(0, { finalRes: res }, 10); onNext(); }} 
+                                className="fun-btn w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold shadow-md shadow-indigo-200">
+                                我懂了，下一關
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            );
+        };
+
+        // --- Level 1: Pixel Art ---
+        const Level1_PixelArt = ({ onNext, onSubmit }) => {
+            const [gridSize, setGridSize] = useState(8);
+            const [pixels, setPixels] = useState([]);
             
-            <div className="flex-1 flex flex-col md:flex-row gap-8 items-center justify-center">
-                <div className="border-8 border-slate-200 rounded-2xl overflow-hidden shadow-xl bg-white">
-                     <canvas ref={canvasRef} width={300} height={300} className="block"></canvas>
-                </div>
-                
-                <div className="w-full md:w-1/3 space-y-6 bg-slate-50 p-6 rounded-2xl">
-                    <div className="space-y-2">
-                        <label className="flex justify-between text-sm font-bold text-slate-700">
-                            <span>馬賽克化</span>
-                            <span>清晰度</span>
-                        </label>
-                        <input type="range" min="1" max="100" value={res} onChange={(e)=>setRes(parseInt(e.target.value))} 
-                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+            useEffect(() => setPixels(Array(gridSize * gridSize).fill(false)), [gridSize]);
+
+            const togglePixel = (i) => {
+                const p = [...pixels]; p[i] = !p[i]; setPixels(p);
+            };
+
+            return (
+                <div className="flex flex-col h-full gap-6">
+                    <div className="flex justify-between items-end border-b border-slate-100 pb-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Level 1</span>
+                                <h2 className="text-2xl font-bold text-slate-800">像素畫板</h2>
+                            </div>
+                            <p className="text-slate-500">點擊格子作畫，觀察像素總數的變化。</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={()=>setGridSize(8)} className={`px-4 py-2 rounded-lg font-bold transition-colors ${gridSize===8 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200':'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>8x8</button>
+                            <button onClick={()=>setGridSize(16)} className={`px-4 py-2 rounded-lg font-bold transition-colors ${gridSize===16 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200':'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>16x16</button>
+                        </div>
                     </div>
 
-                    <div className="text-center p-4 bg-white rounded-xl shadow-sm border border-slate-100">
-                        <p className="text-sm text-slate-500 mb-1">目前模擬</p>
-                        <p className="text-2xl font-bold text-indigo-600 font-mono">{Math.floor(res/10)}x{Math.floor(res/10)} 網格</p>
+                    <div className="flex-1 flex flex-col md:flex-row gap-8 justify-center items-center">
+                        <div className="aspect-square h-[320px] pixel-grid shadow-inner bg-white" 
+                            style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}>
+                            {pixels.map((p, i) => (
+                                <div key={i} onMouseDown={() => togglePixel(i)} onMouseEnter={(e) => e.buttons === 1 && togglePixel(i)}
+                                    className={`pixel-cell ${p ? 'bg-slate-800' : 'bg-white'}`}></div>
+                            ))}
+                        </div>
+
+                        <div className="w-full md:w-64 flex flex-col gap-4">
+                            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-lg space-y-3">
+                                <div className="flex justify-between"><span className="text-slate-500">解析度</span><span className="font-bold text-indigo-600">{gridSize} x {gridSize}</span></div>
+                                <div className="flex justify-between"><span className="text-slate-500">總像素</span><span className="font-bold text-orange-500">{gridSize * gridSize} px</span></div>
+                                <div className="flex justify-between border-t pt-2"><span className="text-slate-500">黑色點</span><span className="font-bold">{pixels.filter(Boolean).length}</span></div>
+                            </div>
+                            <button onClick={() => { onSubmit(1, { gridSize: `${gridSize}x${gridSize}` }, 15); onNext(); }} 
+                                className="fun-btn w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-200">
+                                記錄數據 (+15分)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Level 2: Binary ---
+        const Level2_Binary = ({ onNext, onSubmit }) => {
+            const [rows, setRows] = useState(Array(8).fill(0));
+            const toggleBit = (r, c) => { const n = [...rows]; n[r] ^= (1 << (7 - c)); setRows(n); };
+            const toBin = (n) => n.toString(2).padStart(8, '0');
+
+            return (
+                <div className="flex flex-col h-full gap-6">
+                    <div className="border-b border-slate-100 pb-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Level 2</span>
+                            <h2 className="text-2xl font-bold text-slate-800">0與1的世界</h2>
+                        </div>
+                        <p className="text-slate-500">電腦只懂 0 與 1。白色 = 0，黑色 = 1。</p>
                     </div>
 
-                    <button onClick={() => { onSubmit(0, { finalRes: res }, 10); onNext(); }} 
-                        className="fun-btn w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold shadow-md shadow-indigo-200">
-                        我懂了，下一關
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Level 1: Pixel Art ---
-const Level1_PixelArt = ({ onNext, onSubmit }) => {
-    const [gridSize, setGridSize] = useState(8);
-    const [pixels, setPixels] = useState([]);
-    
-    useEffect(() => setPixels(Array(gridSize * gridSize).fill(false)), [gridSize]);
-
-    const togglePixel = (i) => {
-        const p = [...pixels]; p[i] = !p[i]; setPixels(p);
-    };
-
-    return (
-        <div className="flex flex-col h-full gap-6">
-             <div className="flex justify-between items-end border-b border-slate-100 pb-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Level 1</span>
-                        <h2 className="text-2xl font-bold text-slate-800">像素畫板</h2>
-                    </div>
-                    <p className="text-slate-500">點擊格子作畫，觀察像素總數的變化。</p>
-                </div>
-                <div className="flex gap-2">
-                    <button onClick={()=>setGridSize(8)} className={`px-4 py-2 rounded-lg font-bold transition-colors ${gridSize===8 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200':'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>8x8</button>
-                    <button onClick={()=>setGridSize(16)} className={`px-4 py-2 rounded-lg font-bold transition-colors ${gridSize===16 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200':'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>16x16</button>
-                </div>
-            </div>
-
-            <div className="flex-1 flex flex-col md:flex-row gap-8 justify-center items-center">
-                <div className="aspect-square h-[320px] pixel-grid shadow-inner bg-white" 
-                     style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}>
-                    {pixels.map((p, i) => (
-                        <div key={i} onMouseDown={() => togglePixel(i)} onMouseEnter={(e) => e.buttons === 1 && togglePixel(i)}
-                             className={`pixel-cell ${p ? 'bg-slate-800' : 'bg-white'}`}></div>
-                    ))}
-                </div>
-
-                <div className="w-full md:w-64 flex flex-col gap-4">
-                    <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-lg space-y-3">
-                        <div className="flex justify-between"><span className="text-slate-500">解析度</span><span className="font-bold text-indigo-600">{gridSize} x {gridSize}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-500">總像素</span><span className="font-bold text-orange-500">{gridSize * gridSize} px</span></div>
-                        <div className="flex justify-between border-t pt-2"><span className="text-slate-500">黑色點</span><span className="font-bold">{pixels.filter(Boolean).length}</span></div>
-                    </div>
-                    <button onClick={() => { onSubmit(1, { gridSize: `${gridSize}x${gridSize}` }, 15); onNext(); }} 
-                        className="fun-btn w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-200">
-                        記錄數據 (+15分)
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Level 2: Binary ---
-const Level2_Binary = ({ onNext, onSubmit }) => {
-    const [rows, setRows] = useState(Array(8).fill(0));
-    const toggleBit = (r, c) => { const n = [...rows]; n[r] ^= (1 << (7 - c)); setRows(n); };
-    const toBin = (n) => n.toString(2).padStart(8, '0');
-
-    return (
-        <div className="flex flex-col h-full gap-6">
-             <div className="border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Level 2</span>
-                    <h2 className="text-2xl font-bold text-slate-800">0與1的世界</h2>
-                </div>
-                <p className="text-slate-500">電腦只懂 0 與 1。白色 = 0，黑色 = 1。</p>
-            </div>
-
-            <div className="flex-1 flex flex-col items-center justify-center">
-                <div className="flex gap-6 items-start bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner">
-                    <div className="grid gap-1">
-                        {rows.map((val, r) => (
-                            <div key={r} className="flex gap-1">
-                                {Array(8).fill(0).map((_, c) => {
-                                    const isB = (val >> (7 - c)) & 1;
-                                    return <div key={c} onClick={() => toggleBit(r, c)}
-                                        className={`w-8 h-8 md:w-10 md:h-10 border rounded cursor-pointer flex items-center justify-center text-xs font-bold transition-colors
-                                        ${isB ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-300 border-slate-200 hover:border-indigo-300'}`}>
-                                        {isB ? '1' : '0'}
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                        <div className="flex gap-6 items-start bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner">
+                            <div className="grid gap-1">
+                                {rows.map((val, r) => (
+                                    <div key={r} className="flex gap-1">
+                                        {Array(8).fill(0).map((_, c) => {
+                                            const isB = (val >> (7 - c)) & 1;
+                                            return <div key={c} onClick={() => toggleBit(r, c)}
+                                                className={`w-8 h-8 md:w-10 md:h-10 border rounded cursor-pointer flex items-center justify-center text-xs font-bold transition-colors
+                                                ${isB ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-300 border-slate-200 hover:border-indigo-300'}`}>
+                                                {isB ? '1' : '0'}
+                                            </div>
+                                        })}
                                     </div>
-                                })}
+                                ))}
+                            </div>
+                            <div className="flex flex-col gap-1 pt-0 font-mono text-lg md:text-2xl font-bold text-indigo-600">
+                                {rows.map((v, i) => (
+                                    <div key={i} className="h-8 md:h-10 flex items-center tracking-widest bg-white px-3 rounded border border-indigo-100 shadow-sm">{toBin(v)}</div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div className="mt-8">
+                            <button onClick={() => { onSubmit(2, { binary: rows.map(toBin) }, 15); onNext(); }} 
+                                className="fun-btn bg-indigo-600 text-white py-3 px-12 rounded-xl font-bold shadow-lg shadow-indigo-200">
+                                確認轉換 (+15分)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Level 3: Color Depth ---
+        const Level3_ColorDepth = ({ onNext, onSubmit }) => {
+            const [depth, setDepth] = useState(1);
+            const [grid, setGrid] = useState(Array(64).fill(0));
+            const pals = { 1: ['#fff','#000'], 2: ['#fff','#000','#f00','#00f'], 3: ['#fff','#000','#f00','#0f0','#00f','#ff0','#0ff','#f0f'] };
+
+            useEffect(() => setGrid(Array(64).fill(0)), [depth]);
+            const cycleColor = (i) => { setGrid(g => { const n = [...g]; n[i] = (n[i] + 1) % (1 << depth); return n; }); };
+
+            return (
+                <div className="flex flex-col h-full gap-6">
+                    <div className="border-b border-slate-100 pb-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Level 3</span>
+                            <h2 className="text-2xl font-bold text-slate-800">色彩的代價</h2>
+                        </div>
+                        <p className="text-slate-500">顏色越多，需要的「位元(bit)」越多，檔案就越大。</p>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-8 justify-center items-start">
+                        <div className="w-full md:w-1/4 space-y-3">
+                            <p className="font-bold text-slate-700">選擇色彩深度</p>
+                            {[1, 2, 3].map(d => (
+                                <button key={d} onClick={()=>setDepth(d)} className={`w-full p-3 rounded-xl border text-left transition-all ${depth===d ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-200':'border-slate-200 hover:bg-slate-50'}`}>
+                                    <div className="font-bold text-slate-800">{d} Bit{d>1?'s':''}</div>
+                                    <div className="text-xs text-slate-500">{Math.pow(2,d)} 種顏色</div>
+                                </button>
+                            ))}
+                            <div className="bg-slate-100 p-3 rounded-xl">
+                                <div className="text-xs text-slate-500 mb-2">可用色票</div>
+                                <div className="flex gap-1 flex-wrap">{pals[depth].map((c,i)=><div key={i} className="w-6 h-6 rounded border border-slate-300 shadow-sm" style={{backgroundColor:c}}></div>)}</div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-8 gap-1 bg-white p-2 rounded-xl shadow-lg border border-slate-200">
+                            {grid.map((c, i) => (
+                                <div key={i} onMouseDown={()=>cycleColor(i)} className="w-8 h-8 md:w-10 md:h-10 rounded-sm cursor-pointer border border-slate-100 hover:opacity-80 transition-opacity" style={{backgroundColor: pals[depth][c]}}></div>
+                            ))}
+                        </div>
+
+                        <div className="w-full md:w-1/4 bg-slate-800 text-white p-5 rounded-2xl shadow-xl">
+                            <h3 className="font-bold text-indigo-300 mb-4 border-b border-slate-600 pb-2">檔案大小計算</h3>
+                            <div className="space-y-3 text-sm font-mono">
+                                <div className="flex justify-between"><span>64 像素 x</span><span className="text-yellow-400">{depth} bits</span></div>
+                                <div className="border-t border-slate-600 pt-3 flex justify-between text-xl font-bold text-green-400">
+                                    <span>Total:</span><span>{64 * depth} bits</span>
+                                </div>
+                            </div>
+                            <button onClick={() => { onSubmit(3, { depth, fileSize: 64*depth }, 20); onNext(); }} 
+                                className="fun-btn w-full mt-6 bg-white text-slate-900 py-2 rounded-xl font-bold hover:bg-slate-100">
+                                上傳紀錄 (+20分)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Level 4: RLE ---
+        const Level4_RLE = ({ onNext, onSubmit }) => {
+            const [grid, setGrid] = useState(Array(64).fill(0));
+            const target = [0,0,0,0,0,0,0,0, 0,0,1,1,1,1,0,0, 0,1,0,0,0,0,1,0, 0,1,0,1,1,0,1,0, 0,1,0,1,1,0,1,0, 0,1,0,0,0,0,1,0, 0,0,1,1,1,1,0,0, 0,0,0,0,0,0,0,0];
+            const clues = ["第1行: 8白", "第2行: 2白, 4黑, 2白", "第3行: 1白, 1黑, 4白, 1黑, 1白", "第4行: 1白, 1黑, 1白, 2黑, 1白, 1黑, 1白", "第5行: 同上", "第6行: 1白, 1黑, 4白, 1黑, 1白", "第7行: 2白, 4黑, 2白", "第8行: 8白"];
+            
+            const toggle = (i) => { const n = [...grid]; n[i] = n[i]===0?1:0; setGrid(n); };
+            const isWin = JSON.stringify(grid) === JSON.stringify(target);
+
+            return (
+                <div className="flex flex-col h-full gap-6">
+                    <div className="border-b border-slate-100 pb-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Level 4</span>
+                            <h2 className="text-2xl font-bold text-slate-800">資料壓縮術 (RLE)</h2>
+                        </div>
+                        <p className="text-slate-500">電腦不說「白白白」，它說「3白」。請依左側密碼還原圖片。</p>
+                    </div>
+
+                    <div className="flex-1 flex flex-col md:flex-row gap-8 justify-center items-center">
+                        <div className="bg-slate-800 text-green-400 p-6 rounded-2xl font-mono text-sm shadow-xl w-64 border border-slate-600">
+                            <h3 className="border-b border-slate-600 pb-2 mb-3 font-bold text-center text-white">ENCODED DATA</h3>
+                            {clues.map((c, i) => <div key={i} className="mb-1 opacity-80">{c}</div>)}
+                        </div>
+
+                        <div className="grid grid-cols-8 gap-1 p-2 bg-slate-200 rounded-lg">
+                            {grid.map((v, i) => (
+                                <div key={i} onClick={() => toggle(i)} className={`w-10 h-10 rounded transition-colors cursor-pointer ${v===1 ? 'bg-slate-800' : 'bg-white'}`}></div>
+                            ))}
+                        </div>
+
+                        <div className="w-32 flex justify-center">
+                            {isWin ? (
+                                <div className="text-center animate-bounce">
+                                    <CheckCircle size={56} className="text-green-500 mx-auto mb-2"/>
+                                    <button onClick={() => { onSubmit(4, { success: true }, 20); onNext(); }} className="fun-btn bg-green-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-green-200">
+                                        解碼成功 (+20)
+                                    </button>
+                                </div>
+                            ) : <div className="text-slate-400 text-center font-bold">等待解碼...</div>}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Level 5: Boss ---
+        const Level5_Boss = ({ onNext, onSubmit }) => {
+            const [input, setInput] = useState("");
+            const [msg, setMsg] = useState(null);
+            const problem = [0,0,0,1,1,0,1,0]; // 3W 2B 1W 1B 1W
+
+            const check = () => {
+                if (input.replace(/\s/g, '').replace(/，/g, ',') === "3,2,1,1,1") {
+                    setMsg("correct");
+                    setTimeout(() => { onSubmit(5, { bossDefeated: true }, 20); onNext(); }, 1500);
+                } else {
+                    setMsg("error");
+                }
+            };
+
+            return (
+                <div className="flex flex-col h-full items-center justify-center text-center gap-8">
+                    <div className="animate-pulse">
+                        <h2 className="text-3xl font-extrabold text-red-500 flex items-center justify-center gap-3"><Lock size={32}/> BOSS STAGE</h2>
+                        <p className="text-slate-500 mt-2">系統偵測到受損資料。請觀察像素，輸入 RLE 壓縮碼修復它。</p>
+                    </div>
+
+                    <div className="bg-white p-10 rounded-3xl border-2 border-red-100 shadow-2xl w-full max-w-lg relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-red-500"></div>
+                        
+                        <div className="flex gap-1 justify-center mb-8 bg-slate-100 p-4 rounded-xl">
+                            {problem.map((v, i) => <div key={i} className={`w-12 h-12 rounded border-2 border-slate-300 ${v===1 ? 'bg-slate-800' : 'bg-white'}`}></div>)}
+                        </div>
+
+                        <p className="text-slate-400 text-sm mb-2">格式範例：3,2,1 (3白, 2黑, 1白)</p>
+                        <input type="text" placeholder="輸入代碼..." className="text-center text-2xl font-mono tracking-widest border-2 border-slate-200 rounded-xl p-3 w-full mb-4 focus:border-red-400 outline-none transition-colors"
+                            value={input} onChange={e=>setInput(e.target.value)} />
+                        
+                        <button onClick={check} className="fun-btn w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 text-xl">
+                            執行修復指令
+                        </button>
+                        
+                        {msg === "error" && <div className="mt-4 text-red-500 font-bold animate-shake">❌ 編碼錯誤，請重新計算！</div>}
+                        {msg === "correct" && <div className="mt-4 text-green-500 font-bold text-xl">✅ 修復成功！系統重啟中...</div>}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- New Level 6: Quiz ---
+        const Level6_Quiz = ({ onNext, onSubmit }) => {
+            const [answers, setAnswers] = useState({});
+            const questions = [
+                { id: 1, q: "1. 數位影像中，最小的單位是？", opts: ["公分 (cm)", "像素 (Pixel)", "位元組 (Byte)"], ans: "像素 (Pixel)" },
+                { id: 2, q: "2. 在黑白二進位圖片中，通常 0 代表？", opts: ["紅色", "黑色", "白色"], ans: "白色" },
+                { id: 3, q: "3. 一張 8x8 的圖片，若用 2 bits 儲存顏色，檔案大小是？", opts: ["64 bits", "128 bits", "256 bits"], ans: "128 bits" },
+                { id: 4, q: "4. RLE (行程編碼) 的主要目的是？", opts: ["讓圖片變模糊", "壓縮檔案大小", "增加色彩"], ans: "壓縮檔案大小" }
+            ];
+
+            const handleSubmit = () => {
+                let score = 0;
+                questions.forEach(q => { if(answers[q.id] === q.ans) score += 5; }); // 每題 5 分，共 20 分
+                onSubmit(6, { quizAnswers: answers }, score);
+                onNext();
+            };
+
+            return (
+                <div className="flex flex-col h-full gap-6">
+                    <div className="border-b border-slate-100 pb-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Bonus</span>
+                            <h2 className="text-2xl font-bold text-slate-800">觀念總驗收</h2>
+                        </div>
+                        <p className="text-slate-500">最後的挑戰！每題 5 分，共 20 分。</p>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto space-y-6 px-2">
+                        {questions.map((q) => (
+                            <div key={q.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                                <h3 className="font-bold text-lg text-slate-700 mb-3">{q.q}</h3>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {q.opts.map(opt => (
+                                        <button key={opt} onClick={() => setAnswers({...answers, [q.id]: opt})}
+                                            className={`py-3 rounded-xl text-sm font-bold transition-all ${answers[q.id]===opt ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
+                                            {opt}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         ))}
                     </div>
-                    <div className="flex flex-col gap-1 pt-0 font-mono text-lg md:text-2xl font-bold text-indigo-600">
-                        {rows.map((v, i) => (
-                            <div key={i} className="h-8 md:h-10 flex items-center tracking-widest bg-white px-3 rounded border border-indigo-100 shadow-sm">{toBin(v)}</div>
-                        ))}
-                    </div>
-                </div>
-                
-                <div className="mt-8">
-                    <button onClick={() => { onSubmit(2, { binary: rows.map(toBin) }, 15); onNext(); }} 
-                        className="fun-btn bg-indigo-600 text-white py-3 px-12 rounded-xl font-bold shadow-lg shadow-indigo-200">
-                        確認轉換 (+15分)
+                    
+                    <button onClick={handleSubmit} disabled={Object.keys(answers).length < 4}
+                        className="fun-btn w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-orange-200 disabled:opacity-50 text-xl">
+                        提交試卷
                     </button>
                 </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Level 3: Color Depth ---
-const Level3_ColorDepth = ({ onNext, onSubmit }) => {
-    const [depth, setDepth] = useState(1);
-    const [grid, setGrid] = useState(Array(64).fill(0));
-    const pals = { 1: ['#fff','#000'], 2: ['#fff','#000','#f00','#00f'], 3: ['#fff','#000','#f00','#0f0','#00f','#ff0','#0ff','#f0f'] };
-
-    useEffect(() => setGrid(Array(64).fill(0)), [depth]);
-    const cycleColor = (i) => { setGrid(g => { const n = [...g]; n[i] = (n[i] + 1) % (1 << depth); return n; }); };
-
-    return (
-        <div className="flex flex-col h-full gap-6">
-            <div className="border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Level 3</span>
-                    <h2 className="text-2xl font-bold text-slate-800">色彩的代價</h2>
-                </div>
-                <p className="text-slate-500">顏色越多，需要的「位元(bit)」越多，檔案就越大。</p>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-8 justify-center items-start">
-                <div className="w-full md:w-1/4 space-y-3">
-                    <p className="font-bold text-slate-700">選擇色彩深度</p>
-                    {[1, 2, 3].map(d => (
-                        <button key={d} onClick={()=>setDepth(d)} className={`w-full p-3 rounded-xl border text-left transition-all ${depth===d ? 'bg-indigo-50 border-indigo-500 ring-2 ring-indigo-200':'border-slate-200 hover:bg-slate-50'}`}>
-                            <div className="font-bold text-slate-800">{d} Bit{d>1?'s':''}</div>
-                            <div className="text-xs text-slate-500">{Math.pow(2,d)} 種顏色</div>
-                        </button>
-                    ))}
-                    <div className="bg-slate-100 p-3 rounded-xl">
-                        <div className="text-xs text-slate-500 mb-2">可用色票</div>
-                        <div className="flex gap-1 flex-wrap">{pals[depth].map((c,i)=><div key={i} className="w-6 h-6 rounded border border-slate-300 shadow-sm" style={{backgroundColor:c}}></div>)}</div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-8 gap-1 bg-white p-2 rounded-xl shadow-lg border border-slate-200">
-                    {grid.map((c, i) => (
-                        <div key={i} onMouseDown={()=>cycleColor(i)} className="w-8 h-8 md:w-10 md:h-10 rounded-sm cursor-pointer border border-slate-100 hover:opacity-80 transition-opacity" style={{backgroundColor: pals[depth][c]}}></div>
-                    ))}
-                </div>
-
-                <div className="w-full md:w-1/4 bg-slate-800 text-white p-5 rounded-2xl shadow-xl">
-                    <h3 className="font-bold text-indigo-300 mb-4 border-b border-slate-600 pb-2">檔案大小計算</h3>
-                    <div className="space-y-3 text-sm font-mono">
-                        <div className="flex justify-between"><span>64 像素 x</span><span className="text-yellow-400">{depth} bits</span></div>
-                        <div className="border-t border-slate-600 pt-3 flex justify-between text-xl font-bold text-green-400">
-                            <span>Total:</span><span>{64 * depth} bits</span>
-                        </div>
-                    </div>
-                    <button onClick={() => { onSubmit(3, { depth, fileSize: 64*depth }, 20); onNext(); }} 
-                        className="fun-btn w-full mt-6 bg-white text-slate-900 py-2 rounded-xl font-bold hover:bg-slate-100">
-                        上傳紀錄 (+20分)
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Level 4: RLE ---
-const Level4_RLE = ({ onNext, onSubmit }) => {
-    const [grid, setGrid] = useState(Array(64).fill(0));
-    const target = [0,0,0,0,0,0,0,0, 0,0,1,1,1,1,0,0, 0,1,0,0,0,0,1,0, 0,1,0,1,1,0,1,0, 0,1,0,1,1,0,1,0, 0,1,0,0,0,0,1,0, 0,0,1,1,1,1,0,0, 0,0,0,0,0,0,0,0];
-    const clues = ["第1行: 8白", "第2行: 2白, 4黑, 2白", "第3行: 1白, 1黑, 4白, 1黑, 1白", "第4行: 1白, 1黑, 1白, 2黑, 1白, 1黑, 1白", "第5行: 同上", "第6行: 1白, 1黑, 4白, 1黑, 1白", "第7行: 2白, 4黑, 2白", "第8行: 8白"];
-    
-    const toggle = (i) => { const n = [...grid]; n[i] = n[i]===0?1:0; setGrid(n); };
-    const isWin = JSON.stringify(grid) === JSON.stringify(target);
-
-    return (
-        <div className="flex flex-col h-full gap-6">
-            <div className="border-b border-slate-100 pb-4">
-                 <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Level 4</span>
-                    <h2 className="text-2xl font-bold text-slate-800">資料壓縮術 (RLE)</h2>
-                </div>
-                <p className="text-slate-500">電腦不說「白白白」，它說「3白」。請依左側密碼還原圖片。</p>
-            </div>
-
-            <div className="flex-1 flex flex-col md:flex-row gap-8 justify-center items-center">
-                <div className="bg-slate-800 text-green-400 p-6 rounded-2xl font-mono text-sm shadow-xl w-64 border border-slate-600">
-                    <h3 className="border-b border-slate-600 pb-2 mb-3 font-bold text-center text-white">ENCODED DATA</h3>
-                    {clues.map((c, i) => <div key={i} className="mb-1 opacity-80">{c}</div>)}
-                </div>
-
-                <div className="grid grid-cols-8 gap-1 p-2 bg-slate-200 rounded-lg">
-                    {grid.map((v, i) => (
-                        <div key={i} onClick={() => toggle(i)} className={`w-10 h-10 rounded transition-colors cursor-pointer ${v===1 ? 'bg-slate-800' : 'bg-white'}`}></div>
-                    ))}
-                </div>
-
-                <div className="w-32 flex justify-center">
-                    {isWin ? (
-                        <div className="text-center animate-bounce">
-                            <CheckCircle size={56} className="text-green-500 mx-auto mb-2"/>
-                            <button onClick={() => { onSubmit(4, { success: true }, 20); onNext(); }} className="fun-btn bg-green-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-green-200">
-                                解碼成功 (+20)
-                            </button>
-                        </div>
-                    ) : <div className="text-slate-400 text-center font-bold">等待解碼...</div>}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Level 5: Boss ---
-const Level5_Boss = ({ onNext, onSubmit }) => {
-    const [input, setInput] = useState("");
-    const [msg, setMsg] = useState(null);
-    const problem = [0,0,0,1,1,0,1,0]; // 3W 2B 1W 1B 1W
-
-    const check = () => {
-        if (input.replace(/\s/g, '').replace(/，/g, ',') === "3,2,1,1,1") {
-            setMsg("correct");
-            setTimeout(() => { onSubmit(5, { bossDefeated: true }, 20); onNext(); }, 1500);
-        } else {
-            setMsg("error");
-        }
-    };
-
-    return (
-        <div className="flex flex-col h-full items-center justify-center text-center gap-8">
-            <div className="animate-pulse">
-                <h2 className="text-3xl font-extrabold text-red-500 flex items-center justify-center gap-3"><Lock size={32}/> BOSS STAGE</h2>
-                <p className="text-slate-500 mt-2">系統偵測到受損資料。請觀察像素，輸入 RLE 壓縮碼修復它。</p>
-            </div>
-
-            <div className="bg-white p-10 rounded-3xl border-2 border-red-100 shadow-2xl w-full max-w-lg relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-2 bg-red-500"></div>
-                
-                <div className="flex gap-1 justify-center mb-8 bg-slate-100 p-4 rounded-xl">
-                    {problem.map((v, i) => <div key={i} className={`w-12 h-12 rounded border-2 border-slate-300 ${v===1 ? 'bg-slate-800' : 'bg-white'}`}></div>)}
-                </div>
-
-                <p className="text-slate-400 text-sm mb-2">格式範例：3,2,1 (3白, 2黑, 1白)</p>
-                <input type="text" placeholder="輸入代碼..." className="text-center text-2xl font-mono tracking-widest border-2 border-slate-200 rounded-xl p-3 w-full mb-4 focus:border-red-400 outline-none transition-colors"
-                    value={input} onChange={e=>setInput(e.target.value)} />
-                
-                <button onClick={check} className="fun-btn w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 text-xl">
-                    執行修復指令
-                </button>
-                
-                {msg === "error" && <div className="mt-4 text-red-500 font-bold animate-shake">❌ 編碼錯誤，請重新計算！</div>}
-                {msg === "correct" && <div className="mt-4 text-green-500 font-bold text-xl">✅ 修復成功！系統重啟中...</div>}
-            </div>
-        </div>
-    );
-};
-
-// --- New Level 6: Quiz ---
-const Level6_Quiz = ({ onNext, onSubmit }) => {
-    const [answers, setAnswers] = useState({});
-    const questions = [
-        { id: 1, q: "1. 數位影像中，最小的單位是？", opts: ["公分 (cm)", "像素 (Pixel)", "位元組 (Byte)"], ans: "像素 (Pixel)" },
-        { id: 2, q: "2. 在黑白二進位圖片中，通常 0 代表？", opts: ["紅色", "黑色", "白色"], ans: "白色" },
-        { id: 3, q: "3. 一張 8x8 的圖片，若用 2 bits 儲存顏色，檔案大小是？", opts: ["64 bits", "128 bits", "256 bits"], ans: "128 bits" },
-        { id: 4, q: "4. RLE (行程編碼) 的主要目的是？", opts: ["讓圖片變模糊", "壓縮檔案大小", "增加色彩"], ans: "壓縮檔案大小" }
-    ];
-
-    const handleSubmit = () => {
-        let score = 0;
-        questions.forEach(q => { if(answers[q.id] === q.ans) score += 5; }); // 每題 5 分，共 20 分
-        onSubmit(6, { quizAnswers: answers }, score);
-        onNext();
-    };
-
-    return (
-        <div className="flex flex-col h-full gap-6">
-            <div className="border-b border-slate-100 pb-4">
-                 <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-xs font-bold">Bonus</span>
-                    <h2 className="text-2xl font-bold text-slate-800">觀念總驗收</h2>
-                </div>
-                <p className="text-slate-500">最後的挑戰！每題 5 分，共 20 分。</p>
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-6 px-2">
-                {questions.map((q) => (
-                    <div key={q.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                        <h3 className="font-bold text-lg text-slate-700 mb-3">{q.q}</h3>
-                        <div className="grid grid-cols-3 gap-3">
-                            {q.opts.map(opt => (
-                                <button key={opt} onClick={() => setAnswers({...answers, [q.id]: opt})}
-                                    className={`py-3 rounded-xl text-sm font-bold transition-all ${answers[q.id]===opt ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
-                                    {opt}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-            
-            <button onClick={handleSubmit} disabled={Object.keys(answers).length < 4}
-                className="fun-btn w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-orange-200 disabled:opacity-50 text-xl">
-                提交試卷
-            </button>
-        </div>
-    );
-};
-
-// --- End Screen (With Email Simulation) ---
-const EndScreen = ({ userInfo, score, gameData, showToast }) => {
-    const [sending, setSending] = useState(false);
-    const [sent, setSent] = useState(false);
-
-    // 模擬寄信邏輯
-    const handleSendReport = async () => {
-        setSending(true);
-        
-        // 建構要寄送的資料
-        const reportData = {
-            toTeacher: "t0733@ymsh.tp.edu.tw",
-            toStudent: userInfo.email,
-            subject: `[數位影像實驗室] 成績單 - ${userInfo.classCode}${userInfo.seatNo} ${userInfo.name}`,
-            body: {
-                student: userInfo.name,
-                finalScore: score,
-                details: gameData
-            }
+            );
         };
 
-        console.log("📨 正在寄送郵件...", reportData);
+        // --- End Screen (With Email Simulation) ---
+        const EndScreen = ({ userInfo, score, gameData, showToast }) => {
+            const [sending, setSending] = useState(false);
+            const [sent, setSent] = useState(false);
 
-        // 模擬網路延遲
-        setTimeout(() => {
-            setSending(false);
-            setSent(true);
-            
-            // 無論成功失敗都要顯示訊息 (模擬成功)
-            if (Math.random() > 0.1) {
-                showToast(`成績已寄送至 ${userInfo.email} 與老師信箱！`, 'success');
-            } else {
-                showToast("寄送失敗，請截圖保存成績。", "error");
-            }
-        }, 2000);
-
-        // 如果真的有 GAS URL，這裡會是：
-        // fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'sendEmail', ...reportData }) });
-    };
-
-    useEffect(() => {
-        if(!sent && !sending) handleSendReport();
-    }, []);
-
-    return (
-        <div className="h-full flex flex-col items-center justify-center text-center space-y-8 animate-[slideIn_0.5s_ease-out]">
-            <div className="relative">
-                <div className="w-32 h-32 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg shadow-yellow-200 animate-bounce">
-                     <Award size={80} className="text-white"/>
-                </div>
-                <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl border-4 border-white">
-                    {score}
-                </div>
-            </div>
-            
-            <div>
-                <h2 className="text-4xl font-extrabold text-slate-800 mb-2">恭喜完成實驗！</h2>
-                <p className="text-slate-500">學員：<span className="font-bold text-indigo-600">{userInfo.name}</span> | 最終積分：<span className="font-bold text-orange-500 text-2xl">{score}</span> / 120</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl w-full max-w-md border border-slate-100 shadow-xl text-left space-y-4">
-                <h3 className="font-bold text-slate-700 flex items-center gap-2 border-b pb-2"><Send size={18}/> 學習歷程傳送狀態</h3>
+            // 模擬寄信邏輯
+            const handleSendReport = async () => {
+                setSending(true);
                 
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500">指導老師 (t0733)</span>
-                        {sending ? <span className="text-orange-500 animate-pulse">傳送中...</span> : <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> 已送達</span>}
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500">學員存查 ({userInfo.email})</span>
-                        {sending ? <span className="text-orange-500 animate-pulse">傳送中...</span> : <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> 已送達</span>}
-                    </div>
-                </div>
+                // 建構要寄送的資料
+                const reportData = {
+                    toTeacher: "t0733@ymsh.tp.edu.tw",
+                    toStudent: userInfo.email,
+                    subject: `[數位影像實驗室] 成績單 - ${userInfo.classCode}${userInfo.seatNo} ${userInfo.name}`,
+                    body: {
+                        student: userInfo.name,
+                        finalScore: score,
+                        details: gameData
+                    }
+                };
 
-                <div className="bg-slate-50 p-3 rounded-xl text-xs text-slate-400 mt-4">
-                    系統已自動將你的答題詳細記錄打包寄出。請檢查你的信箱（含垃圾郵件匣）。
-                </div>
-            </div>
+                console.log("📨 正在寄送郵件...", reportData);
 
-            <button onClick={() => window.location.reload()} className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors font-bold">
-                <RotateCcw size={18}/> 重新挑戰
-            </button>
-        </div>
-    );
-};
+                // 模擬網路延遲
+                setTimeout(() => {
+                    setSending(false);
+                    setSent(true);
+                    
+                    // 無論成功失敗都要顯示訊息 (模擬成功)
+                    if (Math.random() > 0.1) {
+                        showToast(`成績已寄送至 ${userInfo.email} 與老師信箱！`, 'success');
+                    } else {
+                        showToast("寄送失敗，請截圖保存成績。", "error");
+                    }
+                }, 2000);
+
+                // 如果真的有 GAS URL，這裡會是：
+                // fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'sendEmail', ...reportData }) });
+            };
+
+            useEffect(() => {
+                if(!sent && !sending) handleSendReport();
+            }, []);
+
+            return (
+                <div className="h-full flex flex-col items-center justify-center text-center space-y-8 animate-[slideIn_0.5s_ease-out]">
+                    <div className="relative">
+                        <div className="w-32 h-32 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg shadow-yellow-200 animate-bounce">
+                            <Award size={80} className="text-white"/>
+                        </div>
+                        <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl border-4 border-white">
+                            {score}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h2 className="text-4xl font-extrabold text-slate-800 mb-2">恭喜完成實驗！</h2>
+                        <p className="text-slate-500">學員：<span className="font-bold text-indigo-600">{userInfo.name}</span> | 最終積分：<span className="font-bold text-orange-500 text-2xl">{score}</span> / 120</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl w-full max-w-md border border-slate-100 shadow-xl text-left space-y-4">
+                        <h3 className="font-bold text-slate-700 flex items-center gap-2 border-b pb-2"><Send size={18}/> 學習歷程傳送狀態</h3>
+                        
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-slate-500">指導老師 (t0733)</span>
+                                {sending ? <span className="text-orange-500 animate-pulse">傳送中...</span> : <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> 已送達</span>}
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-slate-500">學員存查 ({userInfo.email})</span>
+                                {sending ? <span className="text-orange-500 animate-pulse">傳送中...</span> : <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> 已送達</span>}
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-50 p-3 rounded-xl text-xs text-slate-400 mt-4">
+                            系統已自動將你的答題詳細記錄打包寄出。請檢查你的信箱（含垃圾郵件匣）。
+                        </div>
+                    </div>
+
+                    <button onClick={() => window.location.reload()} className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors font-bold">
+                        <RotateCcw size={18}/> 重新挑戰
+                    </button>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
