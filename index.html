@@ -96,10 +96,11 @@
             Award: (props) => <IconBase {...props}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></IconBase>,
             Mail: (props) => <IconBase {...props}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></IconBase>,
             Send: (props) => <IconBase {...props}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></IconBase>,
-            Lightbulb: (props) => <IconBase {...props}><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2v1"/><path d="M12 15a5 5 0 0 1 5-5 5 5 0 0 1 5 5v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a5 5 0 0 1 5-5 5 5 0 0 1 5 5z"/></IconBase>
+            Lightbulb: (props) => <IconBase {...props}><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2v1"/><path d="M12 15a5 5 0 0 1 5-5 5 5 0 0 1 5 5v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a5 5 0 0 1 5-5 5 5 0 0 1 5 5z"/></IconBase>,
+            Pencil: (props) => <IconBase {...props}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></IconBase>
         };
 
-        const { Terminal, Cpu, Grid, Eye, Save, Lock, CheckCircle, Monitor, Play, RotateCcw, Award, Mail, Send, Lightbulb } = Icons;
+        const { Terminal, Cpu, Grid, Eye, Save, Lock, CheckCircle, Monitor, Play, RotateCcw, Award, Mail, Send, Lightbulb, Pencil } = Icons;
 
         const App = () => {
             const [level, setLevel] = useState(-1);
@@ -183,7 +184,7 @@
                     </main>
 
                     <footer className="mt-8 text-slate-400 text-sm font-medium text-center z-10">
-                        Designed for CS Education • 台北市立陽明高中國中部 陳政川老師
+                        Designed for CS Education • 台北市立陽明高中
                     </footer>
                 </div>
             );
@@ -205,8 +206,8 @@
                         <div className="bg-indigo-100 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg rotate-3 hover:rotate-6 transition-transform">
                             <Cpu size={48} className="text-indigo-600" />
                         </div>
-                        <h2 className="text-4xl font-extrabold text-slate-800">填寫基本資料</h2>
-                        <p className="text-slate-500 text-lg">輸入資料以啟動數位實驗室紀錄系統</p>
+                        <h2 className="text-4xl font-extrabold text-slate-800">學員報到</h2>
+                        <p className="text-slate-500 text-lg">輸入資料以啟動實驗紀錄系統</p>
                     </div>
                     <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
                         <div className="grid grid-cols-2 gap-4">
@@ -224,12 +225,22 @@
         // --- Level 0: Resolution ---
         const Level0_Resolution = ({ onNext, onSubmit }) => {
             const [res, setRes] = useState(10);
+            const [quizAns, setQuizAns] = useState("");
+            const [quizMsg, setQuizMsg] = useState(null);
             const canvasRef = useRef(null);
             const imgSrc = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23fca5a5'/%3E%3Ccircle cx='200' cy='200' r='100' fill='%23fde047'/%3E%3Crect x='150' y='150' width='30' height='30' fill='%231e293b'/%3E%3Crect x='220' y='150' width='30' height='30' fill='%231e293b'/%3E%3Cpath d='M 150 250 Q 200 300 250 250' stroke='%231e293b' stroke-width='10' fill='none'/%3E%3C/svg%3E";
 
             // 計算當前的 pixelSize 和預估網格數
             const pixelSize = Math.max(1, Math.floor(40 - (res * 0.4) + 1));
             const approxGrid = Math.floor(300 / pixelSize);
+
+            const checkQuiz = () => {
+                if (parseInt(quizAns) === 25) {
+                    setQuizMsg("correct");
+                } else {
+                    setQuizMsg("error");
+                }
+            };
 
             useEffect(() => {
                 const canvas = canvasRef.current;
@@ -295,6 +306,32 @@
                             <div className="guide-box">
                                 <div className="guide-title"><Lightbulb size={18}/> 教學重點：解析度</div>
                                 <p>「解析度」就是格子的密度。當格子很少（例如 7x7）時，圖片會變得像馬賽克一樣模糊；格子越多（例如 100x100），圖片就越清晰，但也需要更多空間來存這些格子的資料喔！</p>
+                            </div>
+
+                            {/* 小試身手區塊 */}
+                            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                                <div className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                                    <div className="bg-indigo-100 p-1 rounded"><Pencil size={14} className="text-indigo-600"/></div>
+                                    小試身手
+                                </div>
+                                <p className="text-xs text-slate-500 mb-3">如果一張圖片的解析度是 <strong>5 x 5</strong>，請問它總共有幾個像素？</p>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="number" 
+                                        className="border border-slate-300 rounded px-2 py-1 text-sm w-full outline-none focus:border-indigo-500" 
+                                        placeholder="輸入答案"
+                                        value={quizAns}
+                                        onChange={(e) => setQuizAns(e.target.value)}
+                                    />
+                                    <button 
+                                        onClick={checkQuiz}
+                                        className="bg-indigo-600 text-white text-xs px-3 py-1 rounded font-bold hover:bg-indigo-700 whitespace-nowrap"
+                                    >
+                                        檢查
+                                    </button>
+                                </div>
+                                {quizMsg === "correct" && <div className="text-green-600 text-xs font-bold mt-2 animate-bounce">✅ 答對了！5 x 5 = 25</div>}
+                                {quizMsg === "error" && <div className="text-red-500 text-xs font-bold mt-2 animate-shake">❌ 再算算看？是 5 乘以 5 喔！</div>}
                             </div>
 
                             <button onClick={() => { onSubmit(0, { finalRes: res }, 10); onNext(); }} 
@@ -391,6 +428,13 @@
             // 目標圖形：一個簡單的 "Hi" (5x7)
             const targetRows = [0, 148, 144, 244, 148, 148, 0, 0];
             const [isMatch, setIsMatch] = useState(false);
+            
+            // --- 隨機小測驗變數 ---
+            // 使用 useRef 避免重新渲染時重置隨機行
+            const quizRowRef = useRef(Math.floor(Math.random() * 8));
+            const quizRow = quizRowRef.current;
+            const [quizAns, setQuizAns] = useState("");
+            const [quizMsg, setQuizMsg] = useState(null);
 
             const toggleBit = (r, c) => { 
                 const n = [...rows]; n[r] ^= (1 << (7 - c)); setRows(n); 
@@ -402,6 +446,16 @@
                 const currentMatch = JSON.stringify(rows) === JSON.stringify(targetRows);
                 setIsMatch(currentMatch);
             }, [rows]);
+
+            // 檢查測驗答案
+            const checkQuiz = () => {
+                const correctBin = toBin(targetRows[quizRow]);
+                if (quizAns.trim() === correctBin) {
+                    setQuizMsg("correct");
+                } else {
+                    setQuizMsg("error");
+                }
+            };
 
             return (
                 <div className="flex flex-col h-full gap-6">
@@ -420,7 +474,7 @@
                             <div className="target-box">
                                 <div className="grid gap-1">
                                     {targetRows.map((val, r) => (
-                                        <div key={r} className="flex gap-1">
+                                        <div key={r} className={`flex gap-1 p-0.5 rounded ${r === quizRow ? 'ring-2 ring-red-500 bg-red-100' : ''}`}>
                                             {Array(8).fill(0).map((_, c) => {
                                                 const isB = (val >> (7 - c)) & 1;
                                                 return <div key={c} className={`w-6 h-6 rounded flex items-center justify-center text-[10px] ${isB ? 'bg-slate-800 text-white' : 'bg-white border border-slate-200 text-slate-300'}`}></div>
@@ -452,18 +506,45 @@
                         </div>
                     </div>
                         
-                    <div className="flex justify-center mt-4">
+                    <div className="flex flex-col items-center gap-4 mt-4 w-full max-w-2xl mx-auto">
                         {isMatch ? (
                             <div className="text-center animate-bounce">
                                 <div className="text-green-500 font-bold text-xl mb-2 flex items-center gap-2 justify-center"><CheckCircle/> 挑戰成功！</div>
                                 <button onClick={() => { onSubmit(2, { binary: rows.map(toBin) }, 15); onNext(); }} className="fun-btn bg-indigo-600 text-white py-3 px-12 rounded-xl font-bold shadow-lg shadow-indigo-200">進入下一關 (+15分)</button>
                             </div>
                         ) : (
-                             <div className="guide-box max-w-2xl">
+                             <div className="guide-box w-full">
                                 <div className="guide-title"><Lightbulb size={18}/> 教學重點：二進位</div>
                                 <p>請試著把右邊的圖案畫得跟左邊一樣！你會發現，每一個黑色格子都對應到數字「1」，白色則是「0」。</p>
                             </div>
                         )}
+
+                        {/* 隨機挑戰區塊 */}
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 w-full">
+                            <div className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                                <div className="bg-indigo-100 p-1 rounded"><Pencil size={14} className="text-indigo-600"/></div>
+                                隨機挑戰 (Mini Quiz)
+                            </div>
+                            <p className="text-xs text-slate-500 mb-3">請看左邊的目標圖形，其中 <strong className="text-red-500">第 {quizRow + 1} 列 (紅色框)</strong> 的二進位代碼應該是多少？</p>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    className="border border-slate-300 rounded px-2 py-1 text-sm w-full outline-none focus:border-indigo-500 font-mono tracking-widest" 
+                                    placeholder="例如: 01010101"
+                                    value={quizAns}
+                                    onChange={(e) => setQuizAns(e.target.value)}
+                                    maxLength={8}
+                                />
+                                <button 
+                                    onClick={checkQuiz}
+                                    className="bg-indigo-600 text-white text-xs px-3 py-1 rounded font-bold hover:bg-indigo-700 whitespace-nowrap"
+                                >
+                                    檢查
+                                </button>
+                            </div>
+                            {quizMsg === "correct" && <div className="text-green-600 text-xs font-bold mt-2 animate-bounce">✅ 答對了！你已經學會轉換二進位了！</div>}
+                            {quizMsg === "error" && <div className="text-red-500 text-xs font-bold mt-2 animate-shake">❌ 答案不對喔！黑色是1，白色是0，請再檢查一次。</div>}
+                        </div>
                     </div>
                 </div>
             );
