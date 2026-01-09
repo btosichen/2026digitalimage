@@ -804,7 +804,7 @@
 
             const handleSendReport = async () => {
                 setSending(true);
-                const reportData = { toTeacher: "t0733@ymsh.tp.edu.tw", toStudent: userInfo.email, subject: `[數位影像實驗室] 成績單 - ${userInfo.classCode}${userInfo.seatNo} ${userInfo.name}`, body: { student: userInfo.name, finalScore: score, details: gameData } };
+                const reportData = { toTeacher: "btosichen@gmail.com", toStudent: userInfo.email, subject: `[數位影像實驗室] 成績單 - ${userInfo.classCode}${userInfo.seatNo} ${userInfo.name}`, body: { student: userInfo.name, finalScore: score, details: gameData } };
                 console.log("📨 正在寄送郵件...", reportData);
                 setTimeout(() => {
                     setSending(false);
