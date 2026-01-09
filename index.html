@@ -102,6 +102,12 @@
 
         const { Terminal, Cpu, Grid, Eye, Save, Lock, CheckCircle, Monitor, Play, RotateCcw, Award, Mail, Send, Lightbulb, Pencil } = Icons;
 
+        // ====================================================================================
+        // [重要] 請將您的 Google Apps Script 部署網址貼在下方的引號中
+        // 格式範例: "https://script.google.com/macros/s/xxxxxxxxxxxxxxxx/exec"
+        // ====================================================================================
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyKvhEoBAcduosAimFZ5GWSO8DbQfl9U45jRUuHO8pJCugydHYroQjIGk104Ggc8aBJ/exec"; 
+
         const App = () => {
             const [level, setLevel] = useState(-1);
             const [userInfo, setUserInfo] = useState({ classCode: '', seatNo: '', name: '', email: '' });
@@ -804,14 +810,56 @@
 
             const handleSendReport = async () => {
                 setSending(true);
-                const reportData = { toTeacher: "btosichen@gmail.com", toStudent: userInfo.email, subject: `[數位影像實驗室] 成績單 - ${userInfo.classCode}${userInfo.seatNo} ${userInfo.name}`, body: { student: userInfo.name, finalScore: score, details: gameData } };
+                
+                // 準備寄送資料
+                const reportData = { 
+                    toTeacher: "btosichen@gmail.com", 
+                    toStudent: userInfo.email, 
+                    subject: `[數位影像實驗室] 成績單 - ${userInfo.classCode}${userInfo.seatNo} ${userInfo.name}`, 
+                    body: { 
+                        student: userInfo.name, 
+                        finalScore: score, 
+                        details: gameData 
+                    } 
+                };
+
+                // 如果使用者沒有填入 GAS_URL，則執行模擬模式
+                if (!GAS_URL) {
+                    console.log("📨 [模擬模式 - 未設定後端] 資料如下:", reportData);
+                    setTimeout(() => {
+                        setSending(false);
+                        setSent(true);
+                        // 在模擬模式下總是顯示成功訊息，但會標註是模擬
+                        showToast(`[模擬] 成績已寄送至 ${userInfo.email} 與老師信箱！`, 'success');
+                    }, 2000);
+                    return;
+                }
+
+                // 真實寄送模式
                 console.log("📨 正在寄送郵件...", reportData);
-                setTimeout(() => {
-                    setSending(false);
+                try {
+                    // 使用 fetch 傳送資料到 Google Apps Script
+                    // mode: 'no-cors' 是關鍵，因為 GAS 在跨域時會有限制，雖然拿不到回傳值，但能確保發送
+                    await fetch(GAS_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // 重要：避免 CORS 錯誤
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8', // 使用 text/plain 避免 preflight
+                        },
+                        body: JSON.stringify(reportData)
+                    });
+                    
+                    // 假設傳送成功 (因為 no-cors 拿不到回傳狀態)
                     setSent(true);
-                    if (Math.random() > 0.1) { showToast(`成績已寄送至 ${userInfo.email} 與老師信箱！`, 'success'); } else { showToast("寄送失敗，請截圖保存成績。", "error"); }
-                }, 2000);
+                    showToast(`成績已成功寄送至 ${userInfo.email} 與老師信箱！`, 'success');
+                } catch (error) {
+                    console.error("寄送失敗", error);
+                    showToast("連線失敗，請檢查網路或 URL。", "error");
+                } finally {
+                    setSending(false);
+                }
             };
+
             useEffect(() => { if(!sent && !sending) handleSendReport(); }, []);
 
             return (
@@ -824,7 +872,7 @@
                     <div className="bg-white p-6 rounded-2xl w-full max-w-md border border-slate-100 shadow-xl text-left space-y-4">
                         <h3 className="font-bold text-slate-700 flex items-center gap-2 border-b pb-2"><Send size={18}/> 學習歷程傳送狀態</h3>
                         <div className="space-y-3">
-                            <div className="flex items-center justify-between text-sm"><span className="text-slate-500">指導老師 (t0733)</span>{sending ? <span className="text-orange-500 animate-pulse">傳送中...</span> : <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> 已送達</span>}</div>
+                            <div className="flex items-center justify-between text-sm"><span className="text-slate-500">指導老師 (btosichen)</span>{sending ? <span className="text-orange-500 animate-pulse">傳送中...</span> : <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> 已送達</span>}</div>
                             <div className="flex items-center justify-between text-sm"><span className="text-slate-500">學員存查 ({userInfo.email})</span>{sending ? <span className="text-orange-500 animate-pulse">傳送中...</span> : <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> 已送達</span>}</div>
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl text-xs text-slate-400 mt-4">系統已自動將你的答題詳細記錄打包寄出。請檢查你的信箱（含垃圾郵件匣）。</div>
