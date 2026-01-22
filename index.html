@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIT_LAB 數位影像實驗室</title>
+    <title>BIT_LAB 數位影像實驗室v0122</title>
     
     <!-- 1. 引入 React 核心 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -106,7 +106,7 @@
         // [重要] 請將您的 Google Apps Script 部署網址貼在下方的引號中
         // 格式範例: "https://script.google.com/macros/s/xxxxxxxxxxxxxxxx/exec"
         // ====================================================================================
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyKvhEoBAcduosAimFZ5GWSO8DbQfl9U45jRUuHO8pJCugydHYroQjIGk104Ggc8aBJ/exec"; 
+        const GAS_URL = ""; 
 
         const App = () => {
             const [level, setLevel] = useState(-1);
@@ -179,9 +179,9 @@
                         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
                         
                         {level === -1 && <LoginScreen onLogin={(info) => { setUserInfo(info); setLevel(0); }} />}
-                        {level === 0 && <Level0_Resolution onNext={nextLevel} onSubmit={submitLevelData} />}
+                        {level === 0 && <Level0_Resolution onNext={nextLevel} onSubmit={submitLevelData} addScore={addScore} />}
                         {level === 1 && <Level1_PixelArt onNext={nextLevel} onSubmit={submitLevelData} />}
-                        {level === 2 && <Level2_Binary onNext={nextLevel} onSubmit={submitLevelData} />}
+                        {level === 2 && <Level2_Binary onNext={nextLevel} onSubmit={submitLevelData} addScore={addScore} />}
                         {level === 3 && <Level3_ColorDepth onNext={nextLevel} onSubmit={submitLevelData} />}
                         {level === 4 && <Level4_RLE onNext={nextLevel} onSubmit={submitLevelData} />}
                         {level === 5 && <Level5_Boss onNext={nextLevel} onSubmit={submitLevelData} />}
@@ -229,10 +229,11 @@
         };
 
         // --- Level 0: Resolution ---
-        const Level0_Resolution = ({ onNext, onSubmit }) => {
+        const Level0_Resolution = ({ onNext, onSubmit, addScore }) => {
             const [res, setRes] = useState(10);
             const [quizAns, setQuizAns] = useState("");
             const [quizMsg, setQuizMsg] = useState(null);
+            const [quizSolved, setQuizSolved] = useState(false); // 新增：是否已答對
             const canvasRef = useRef(null);
             const imgSrc = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23fca5a5'/%3E%3Ccircle cx='200' cy='200' r='100' fill='%23fde047'/%3E%3Crect x='150' y='150' width='30' height='30' fill='%231e293b'/%3E%3Crect x='220' y='150' width='30' height='30' fill='%231e293b'/%3E%3Cpath d='M 150 250 Q 200 300 250 250' stroke='%231e293b' stroke-width='10' fill='none'/%3E%3C/svg%3E";
 
@@ -243,6 +244,10 @@
             const checkQuiz = () => {
                 if (parseInt(quizAns) === 25) {
                     setQuizMsg("correct");
+                    if (!quizSolved) {
+                        addScore(5); // 答對加5分
+                        setQuizSolved(true);
+                    }
                 } else {
                     setQuizMsg("error");
                 }
@@ -318,7 +323,7 @@
                             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                                 <div className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                                     <div className="bg-indigo-100 p-1 rounded"><Pencil size={14} className="text-indigo-600"/></div>
-                                    小試身手
+                                    小試身手 (+5分)
                                 </div>
                                 <p className="text-xs text-slate-500 mb-3">如果一張圖片的解析度是 <strong>5 x 5</strong>，請問它總共有幾個像素？</p>
                                 <div className="flex gap-2">
@@ -328,12 +333,14 @@
                                         placeholder="輸入答案"
                                         value={quizAns}
                                         onChange={(e) => setQuizAns(e.target.value)}
+                                        disabled={quizSolved}
                                     />
                                     <button 
                                         onClick={checkQuiz}
-                                        className="bg-indigo-600 text-white text-xs px-3 py-1 rounded font-bold hover:bg-indigo-700 whitespace-nowrap"
+                                        className={`text-white text-xs px-3 py-1 rounded font-bold whitespace-nowrap ${quizSolved ? 'bg-green-500 cursor-default' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                                        disabled={quizSolved}
                                     >
-                                        檢查
+                                        {quizSolved ? '已完成' : '檢查'}
                                     </button>
                                 </div>
                                 {quizMsg === "correct" && <div className="text-green-600 text-xs font-bold mt-2 animate-bounce">✅ 答對了！5 x 5 = 25</div>}
@@ -429,7 +436,7 @@
         };
 
         // --- Level 2: Binary ---
-        const Level2_Binary = ({ onNext, onSubmit }) => {
+        const Level2_Binary = ({ onNext, onSubmit, addScore }) => {
             const [rows, setRows] = useState(Array(8).fill(0));
             // 目標圖形：一個簡單的 "Hi" (5x7)
             const targetRows = [0, 148, 144, 244, 148, 148, 0, 0];
@@ -441,6 +448,7 @@
             const quizRow = quizRowRef.current;
             const [quizAns, setQuizAns] = useState("");
             const [quizMsg, setQuizMsg] = useState(null);
+            const [quizSolved, setQuizSolved] = useState(false); // 新增：是否已答對
 
             const toggleBit = (r, c) => { 
                 const n = [...rows]; n[r] ^= (1 << (7 - c)); setRows(n); 
@@ -458,6 +466,10 @@
                 const correctBin = toBin(targetRows[quizRow]);
                 if (quizAns.trim() === correctBin) {
                     setQuizMsg("correct");
+                    if (!quizSolved) {
+                        addScore(5); // 答對加5分
+                        setQuizSolved(true);
+                    }
                 } else {
                     setQuizMsg("error");
                 }
@@ -529,7 +541,7 @@
                         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 w-full">
                             <div className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
                                 <div className="bg-indigo-100 p-1 rounded"><Pencil size={14} className="text-indigo-600"/></div>
-                                隨機挑戰 (Mini Quiz)
+                                隨機挑戰 (Mini Quiz) (+5分)
                             </div>
                             <p className="text-xs text-slate-500 mb-3">請看左邊的目標圖形，其中 <strong className="text-red-500">第 {quizRow + 1} 列 (紅色框)</strong> 的二進位代碼應該是多少？</p>
                             <div className="flex gap-2">
@@ -540,12 +552,14 @@
                                     value={quizAns}
                                     onChange={(e) => setQuizAns(e.target.value)}
                                     maxLength={8}
+                                    disabled={quizSolved}
                                 />
                                 <button 
                                     onClick={checkQuiz}
-                                    className="bg-indigo-600 text-white text-xs px-3 py-1 rounded font-bold hover:bg-indigo-700 whitespace-nowrap"
+                                    className={`text-white text-xs px-3 py-1 rounded font-bold whitespace-nowrap ${quizSolved ? 'bg-green-500 cursor-default' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                                    disabled={quizSolved}
                                 >
-                                    檢查
+                                    {quizSolved ? '已完成' : '檢查'}
                                 </button>
                             </div>
                             {quizMsg === "correct" && <div className="text-green-600 text-xs font-bold mt-2 animate-bounce">✅ 答對了！你已經學會轉換二進位了！</div>}
@@ -868,7 +882,7 @@
                         <div className="w-32 h-32 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg shadow-yellow-200 animate-bounce"><Award size={80} className="text-white"/></div>
                         <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl border-4 border-white">{score}</div>
                     </div>
-                    <div><h2 className="text-4xl font-extrabold text-slate-800 mb-2">恭喜完成實驗！</h2><p className="text-slate-500">學員：<span className="font-bold text-indigo-600">{userInfo.name}</span> | 最終積分：<span className="font-bold text-orange-500 text-2xl">{score}</span> / 120</p></div>
+                    <div><h2 className="text-4xl font-extrabold text-slate-800 mb-2">恭喜完成實驗！</h2><p className="text-slate-500">學員：<span className="font-bold text-indigo-600">{userInfo.name}</span> | 最終積分：<span className="font-bold text-orange-500 text-2xl">{score}</span> / 130</p></div>
                     <div className="bg-white p-6 rounded-2xl w-full max-w-md border border-slate-100 shadow-xl text-left space-y-4">
                         <h3 className="font-bold text-slate-700 flex items-center gap-2 border-b pb-2"><Send size={18}/> 學習歷程傳送狀態</h3>
                         <div className="space-y-3">
