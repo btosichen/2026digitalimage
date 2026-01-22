@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIT_LAB 數位影像實驗室v0122</title>
+    <title>BIT_LAB 數位影像實驗室</title>
     
     <!-- 1. 引入 React 核心 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -221,7 +221,7 @@
                             <div><label className="block text-sm font-bold text-slate-600 mb-1 ml-1">座號</label><input name="seatNo" type="number" className="fun-input" placeholder="15" onChange={handleChange} required /></div>
                         </div>
                         <div><label className="block text-sm font-bold text-slate-600 mb-1 ml-1">真實姓名</label><input name="name" type="text" className="fun-input" placeholder="王小明" onChange={handleChange} required /></div>
-                        <div><label className="block text-sm font-bold text-slate-600 mb-1 ml-1">電子信箱</label><input name="email" type="email" className="fun-input" placeholder="student@example.com" onChange={handleChange} required /></div>
+                        <div><label className="block text-sm font-bold text-slate-600 mb-1 ml-1">電子信箱 (選填)</label><input name="email" type="email" className="fun-input" placeholder="student@example.com" onChange={handleChange} /></div>
                         <button type="submit" className="fun-btn w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 text-lg mt-4"><Play size={20} fill="currentColor" /> 開始闖關</button>
                     </form>
                 </div>
@@ -825,16 +825,12 @@
             const handleSendReport = async () => {
                 setSending(true);
                 
-                // 準備寄送資料
+                // 準備寄送資料：結構化欄位以符合 Google Sheet 需求
                 const reportData = { 
-                    toTeacher: "btosichen@gmail.com", 
-                    toStudent: userInfo.email, 
-                    subject: `[數位影像實驗室] 成績單 - ${userInfo.classCode}${userInfo.seatNo} ${userInfo.name}`, 
-                    body: { 
-                        student: userInfo.name, 
-                        finalScore: score, 
-                        details: gameData 
-                    } 
+                    action: "submitScore",
+                    studentInfo: userInfo, // 包含 classCode, seatNo, name, email
+                    finalScore: score, 
+                    gameData: gameData     // 詳細的關卡紀錄
                 };
 
                 // 如果使用者沒有填入 GAS_URL，則執行模擬模式
@@ -843,32 +839,28 @@
                     setTimeout(() => {
                         setSending(false);
                         setSent(true);
-                        // 在模擬模式下總是顯示成功訊息，但會標註是模擬
-                        showToast(`[模擬] 成績已寄送至 ${userInfo.email} 與老師信箱！`, 'success');
+                        showToast(`[模擬] 成績已成功上傳！`, 'success');
                     }, 2000);
                     return;
                 }
 
-                // 真實寄送模式
-                console.log("📨 正在寄送郵件...", reportData);
+                // 真實寄送模式 (寫入 Google Sheet)
+                console.log("📨 正在上傳成績...", reportData);
                 try {
-                    // 使用 fetch 傳送資料到 Google Apps Script
-                    // mode: 'no-cors' 是關鍵，因為 GAS 在跨域時會有限制，雖然拿不到回傳值，但能確保發送
                     await fetch(GAS_URL, {
                         method: 'POST',
                         mode: 'no-cors', // 重要：避免 CORS 錯誤
                         headers: {
-                            'Content-Type': 'text/plain;charset=utf-8', // 使用 text/plain 避免 preflight
+                            'Content-Type': 'text/plain;charset=utf-8', 
                         },
                         body: JSON.stringify(reportData)
                     });
                     
-                    // 假設傳送成功 (因為 no-cors 拿不到回傳狀態)
                     setSent(true);
-                    showToast(`成績已成功寄送至 ${userInfo.email} 與老師信箱！`, 'success');
+                    showToast(`成績已成功上傳至雲端資料庫！`, 'success');
                 } catch (error) {
-                    console.error("寄送失敗", error);
-                    showToast("連線失敗，請檢查網路或 URL。", "error");
+                    console.error("上傳失敗", error);
+                    showToast("連線失敗，請檢查網路。", "error");
                 } finally {
                     setSending(false);
                 }
@@ -884,12 +876,11 @@
                     </div>
                     <div><h2 className="text-4xl font-extrabold text-slate-800 mb-2">恭喜完成實驗！</h2><p className="text-slate-500">學員：<span className="font-bold text-indigo-600">{userInfo.name}</span> | 最終積分：<span className="font-bold text-orange-500 text-2xl">{score}</span> / 130</p></div>
                     <div className="bg-white p-6 rounded-2xl w-full max-w-md border border-slate-100 shadow-xl text-left space-y-4">
-                        <h3 className="font-bold text-slate-700 flex items-center gap-2 border-b pb-2"><Send size={18}/> 學習歷程傳送狀態</h3>
+                        <h3 className="font-bold text-slate-700 flex items-center gap-2 border-b pb-2"><Send size={18}/> 學習歷程上傳狀態</h3>
                         <div className="space-y-3">
-                            <div className="flex items-center justify-between text-sm"><span className="text-slate-500">指導老師 (btosichen)</span>{sending ? <span className="text-orange-500 animate-pulse">傳送中...</span> : <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> 已送達</span>}</div>
-                            <div className="flex items-center justify-between text-sm"><span className="text-slate-500">學員存查 ({userInfo.email})</span>{sending ? <span className="text-orange-500 animate-pulse">傳送中...</span> : <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> 已送達</span>}</div>
+                            <div className="flex items-center justify-between text-sm"><span className="text-slate-500">雲端資料庫 (Google Sheet)</span>{sending ? <span className="text-orange-500 animate-pulse">上傳中...</span> : <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> 已完成</span>}</div>
                         </div>
-                        <div className="bg-slate-50 p-3 rounded-xl text-xs text-slate-400 mt-4">系統已自動將你的答題詳細記錄打包寄出。請檢查你的信箱（含垃圾郵件匣）。</div>
+                        <div className="bg-slate-50 p-3 rounded-xl text-xs text-slate-400 mt-4">系統已自動將你的答題詳細記錄寫入老師的成績試算表中。</div>
                     </div>
                     <button onClick={() => window.location.reload()} className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors font-bold"><RotateCcw size={18}/> 重新挑戰</button>
                 </div>
