@@ -385,6 +385,11 @@
             <input type="text" id="student-name" class="form-input" placeholder="請輸入姓名"><br><br>
         </div>
         <button id="btn-start" class="btn btn-blue" style="margin-top: 20px; font-size: 1.5rem;">出發！開始探險 🚀</button>
+        
+        <!-- 新增的試算表連結 -->
+        <div style="margin-top: 25px; border-top: 2px dashed #ccc; padding-top: 20px;">
+            <a href="https://docs.google.com/spreadsheets/d/1S3cxKpRsdVloY9aGMVsn8tFzB6SEWAV9Lo-yg5E-qCM/edit?usp=sharing" target="_blank" class="btn btn-yellow" style="font-size: 1rem; padding: 10px 20px;">📊 觀看全班學習紀錄</a>
+        </div>
     </div>
 
     <!-- Level 1: 像素概念 -->
@@ -905,7 +910,7 @@
                     document.getElementById('l4-r5').value.replace(/\s+/g, ''),
                     document.getElementById('l4-r6').value.replace(/\s+/g, '')
                 ];
-                // 正確答案
+                // 正確答案：
                 const expectedHashL4 = "27,6,30,6,27,86,27,6,27,6,24,6,27,6,27,86,27,6,30,6,27,86,24,6,24,6,24,86,28,86,28";
                 
                 if (verifyHash(vals.join('|'), expectedHashL4)) {
@@ -922,7 +927,7 @@
             document.getElementById('btn-check-l5').addEventListener('click', () => {
                 studentData.level5Attempts = (studentData.level5Attempts || 0) + 1;
                 const combined = `${document.getElementById('l5-q1').value}|${document.getElementById('l5-q2').value}`;
-                // 正確答案：
+                // 
                 if (verifyHash(combined, "27,26,26,86,24,26,26")) {
                     showNotification('🎉 答對了！你學會計算圖檔大小了！');
                     levelUnlocked[5] = true;
