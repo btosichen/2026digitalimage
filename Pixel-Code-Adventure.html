@@ -384,7 +384,7 @@
             <label style="font-weight: bold;">姓名：</label>
             <input type="text" id="student-name" class="form-input" placeholder="請輸入姓名"><br><br>
         </div>
-        <button class="btn btn-blue" onclick="startAdventure()" style="margin-top: 20px; font-size: 1.5rem;">出發！開始探險 🚀</button>
+        <button id="btn-start" class="btn btn-blue" style="margin-top: 20px; font-size: 1.5rem;">出發！開始探險 🚀</button>
     </div>
 
     <!-- Level 1: 像素概念 -->
@@ -397,16 +397,17 @@
         
         <div class="pixel-demo">
             <div class="demo-img" id="demoImg"></div>
-            <button class="btn btn-blue" onclick="toggleZoom()">🔍 一鍵放大看看</button>
+            <button id="btn-zoom" class="btn btn-blue">🔍 一鍵放大看看</button>
         </div>
 
         <div class="instruction" style="margin-top: 30px;">
             <strong>問題 1：電腦畫圖是用什麼組成的？</strong>
         </div>
         <div class="quiz-options">
-            <button class="btn" onclick="checkAnswer(1, false)">A. 三角形</button>
-            <button class="btn" onclick="checkAnswer(1, true)">B. 像素 (Pixel)</button>
-            <button class="btn" onclick="checkAnswer(1, false)">C. 線條</button>
+            <!-- 答案已經過隱藏，改透過 data-ans 將選項送至加密函數判斷 -->
+            <button class="btn quiz-btn" data-level="1" data-ans="A">A. 三角形</button>
+            <button class="btn quiz-btn" data-level="1" data-ans="B">B. 像素 (Pixel)</button>
+            <button class="btn quiz-btn" data-level="1" data-ans="C">C. 線條</button>
         </div>
     </div>
 
@@ -443,9 +444,9 @@
             </div>
         </div>
         <div class="quiz-options">
-            <button class="btn" onclick="checkAnswer(2, false)">A. 3, 2, 1</button>
-            <button class="btn" onclick="checkAnswer(2, true)">B. 2, 3, 1</button>
-            <button class="btn" onclick="checkAnswer(2, false)">C. 0, 2, 3</button>
+            <button class="btn quiz-btn" data-level="2" data-ans="A">A. 3, 2, 1</button>
+            <button class="btn quiz-btn" data-level="2" data-ans="B">B. 2, 3, 1</button>
+            <button class="btn quiz-btn" data-level="2" data-ans="C">C. 0, 2, 3</button>
         </div>
     </div>
 
@@ -467,13 +468,13 @@
         </div>
         <div class="quiz-options" style="flex-direction: column; align-items: center;">
             <div style="display: flex; gap: 10px; align-items: center;">
-                <button class="btn" onclick="checkAnswer(3, false)">A</button>
+                <button class="btn quiz-btn" data-level="3" data-ans="A">A</button>
                 <div class="rle-row">
                     <div class="rle-cell bg-white"></div><div class="rle-cell bg-white"></div><div class="rle-cell bg-black"></div><div class="rle-cell bg-red"></div><div class="rle-cell bg-red"></div><div class="rle-cell bg-red"></div>
                 </div>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
-                <button class="btn" onclick="checkAnswer(3, true)">B</button>
+                <button class="btn quiz-btn" data-level="3" data-ans="B">B</button>
                 <div class="rle-row">
                     <div class="rle-cell bg-red"></div><div class="rle-cell bg-red"></div><div class="rle-cell bg-black"></div><div class="rle-cell bg-white"></div><div class="rle-cell bg-white"></div><div class="rle-cell bg-white"></div>
                 </div>
@@ -516,7 +517,7 @@
                 <div style="display: flex; align-items: center;">第六行：<input type="text" id="l4-r6" class="form-input" style="width: 140px; margin: 0; padding: 5px;"></div>
             </div>
         </div>
-        <button class="btn btn-blue" onclick="checkLevel4()">👀 檢查答案</button>
+        <button id="btn-check-l4" class="btn btn-blue">👀 檢查答案</button>
     </div>
 
     <!-- Level 5: 圖檔大小計算機 -->
@@ -544,7 +545,7 @@
                 <input type="number" id="l5-q2" class="form-input" placeholder="請輸入計算後的數字">
             </div>
         </div>
-        <button class="btn btn-yellow" onclick="checkLevel5()" style="margin-top: 20px;">🧮 對答案</button>
+        <button id="btn-check-l5" class="btn btn-yellow" style="margin-top: 20px;">🧮 對答案</button>
     </div>
 
     <!-- Level 6: Pixel Editor & Challenge -->
@@ -564,7 +565,7 @@
                 <!-- 色彩位元數選擇器 -->
                 <div style="background: var(--light-bg); padding: 10px; border-radius: 8px; border: 2px dashed var(--dark-bg); text-align: center;">
                     <label style="font-weight: bold; font-size: 1.1rem;">色彩位元數：</label>
-                    <select id="bit-depth-select" class="form-input" style="width: auto; display: inline-block; margin: 0; padding: 5px;" onchange="updatePalette()">
+                    <select id="bit-depth-select" class="form-input" style="width: auto; display: inline-block; margin: 0; padding: 5px;">
                         <option value="1">1 位元 (2色)</option>
                         <option value="2">2 位元 (4色)</option>
                         <option value="3" selected>3 位元 (8色)</option>
@@ -575,7 +576,7 @@
                 <!-- 動態生成的調色盤 -->
                 <div class="color-picker" id="dynamic-color-picker"></div>
                 
-                <button class="btn btn-yellow" onclick="clearCanvas()" style="margin: 0; padding: 8px;">🗑️ 清空畫布</button>
+                <button id="btn-clear" class="btn btn-yellow" style="margin: 0; padding: 8px;">🗑️ 清空畫布</button>
                 
                 <h3 style="margin:10px 0 0 0; text-align:center; color: var(--primary-green);">數位編碼 (RLE)</h3>
                 <div id="output-code" class="output-area">
@@ -583,423 +584,410 @@
                 </div>
                 
                 <div style="display:flex; gap: 10px; margin-top: 10px;">
-                    <button class="btn btn-blue" onclick="exportData()" style="margin: 0; flex: 1; padding: 10px;">💾 複製編碼</button>
-                    <button class="btn btn-red" onclick="submitToGAS()" style="margin: 0; flex: 1; padding: 10px;">🚀 繳交紀錄</button>
+                    <button id="btn-export" class="btn btn-blue" style="margin: 0; flex: 1; padding: 10px;">💾 複製編碼</button>
+                    <button id="btn-submit" class="btn btn-red" style="margin: 0; flex: 1; padding: 10px;">🚀 繳交紀錄</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="controls" id="bottom-controls" style="display:none;">
-        <button id="prevBtn" class="btn btn-yellow" onclick="changeLevel(-1)" style="display:none;">⬅️ 上一關</button>
-        <button id="nextBtn" class="btn" onclick="changeLevel(1)" style="display:none;">下一關 ➡️</button>
+        <button id="btn-prev" class="btn btn-yellow" style="display:none;">⬅️ 上一關</button>
+        <button id="btn-next" class="btn" style="display:none;">下一關 ➡️</button>
     </div>
 </div>
 
 <script>
-    // --- 系統變數 ---
-    let currentLevel = 0;
-    const maxLevels = 6; 
-    let levelUnlocked = [true, true, false, false, false, false, false]; 
-    
-    // --- 學習紀錄變數 ---
-    let studentData = {
-        classId: '', seatNum: '', name: '',
-        startTime: null, endTime: null,
-        level1Attempts: 0, level2Attempts: 0, level3Attempts: 0,
-        level4Attempts: 0, level5Attempts: 0, 
-        finalCode: ''
-    };
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyOs4gl4IVW-TA6d-KfLEPVSk8O1ZP07DZ8uPDCKYk2a4m1_GBGPcftWlPgZBO2XQ45/exec"; 
-
-    // --- 登入邏輯 ---
-    function startAdventure() {
-        const cls = document.getElementById('student-class').value;
-        const num = document.getElementById('student-number').value;
-        const name = document.getElementById('student-name').value;
-        if(!cls || !num || !name) {
-            showNotification('📝 請填寫完整班級、座號與姓名喔！', false);
-            return;
-        }
-        studentData.classId = cls;
-        studentData.seatNum = num;
-        studentData.name = name;
-        studentData.startTime = new Date().toLocaleString();
-
-        document.getElementById('level0').classList.remove('active');
-        currentLevel = 1;
-        document.getElementById('level1').classList.add('active');
-        updateControls();
-        showNotification(`歡迎勇者 ${name}！探險開始！`);
-    }
-
-    // --- Level 1 邏輯 ---
-    let isZoomed = false;
-    function toggleZoom() {
-        const img = document.getElementById('demoImg');
-        isZoomed = !isZoomed;
-        if(isZoomed) {
-            img.classList.add('zoomed');
-        } else {
-            img.classList.remove('zoomed');
-        }
-    }
-
-    // --- 通知與答題共用邏輯 ---
-    function showNotification(msg, isSuccess = true) {
-        const notif = document.getElementById('notification');
-        notif.textContent = msg;
-        notif.style.background = isSuccess ? 'var(--primary-green)' : 'var(--primary-red)';
-        notif.style.color = 'white';
-        notif.style.display = 'block';
-        setTimeout(() => { notif.style.display = 'none'; }, 2000);
-    }
-
-    function checkAnswer(level, isCorrect) {
-        studentData[`level${level}Attempts`] = (studentData[`level${level}Attempts`] || 0) + 1;
-
-        if (isCorrect) {
-            showNotification('🎉 答對了！太厲害了！');
-            levelUnlocked[level] = true;
-            updateControls();
-            setTimeout(() => {
-                if(currentLevel < maxLevels) changeLevel(1);
-            }, 1000);
-        } else {
-            showNotification('❌ 哎呀，再想一下喔！', false);
-        }
-    }
-
-    // --- Level 4 檢查邏輯 ---
-    function checkLevel4() {
-        studentData.level4Attempts = (studentData.level4Attempts || 0) + 1;
+    // 使用 IIFE (立即執行函式) 建立閉包作用域，防堵學生透過 Console (F12) 偷改分數或跳關
+    (function() {
+        // --- 系統變數 (被封裝保護) ---
+        let currentLevel = 0;
+        const maxLevels = 6; 
+        let levelUnlocked = [true, true, false, false, false, false, false]; 
         
-        const a1 = document.getElementById('l4-r1').value.replace(/\s+/g, '');
-        const a2 = document.getElementById('l4-r2').value.replace(/\s+/g, '');
-        const a3 = document.getElementById('l4-r3').value.replace(/\s+/g, '');
-        const a4 = document.getElementById('l4-r4').value.replace(/\s+/g, '');
-        const a5 = document.getElementById('l4-r5').value.replace(/\s+/g, '');
-        const a6 = document.getElementById('l4-r6').value.replace(/\s+/g, '');
-
-        if(a1 === '1,4,1' && a2 === '1,1,2,1,1' && a3 === '1,4,1' && 
-           a4 === '2,2,2' && a5 === '6' && a6 === '6') {
-            showNotification('🎉 答對了！你完全掌握了解碼技巧！');
-            levelUnlocked[4] = true;
-            updateControls();
-            setTimeout(() => changeLevel(1), 1200);
-        } else {
-            showNotification('❌ 哎呀，有幾行的密碼不太對，再檢查一下喔！', false);
-        }
-    }
-
-    // --- Level 5 檢查邏輯 ---
-    function checkLevel5() {
-        studentData.level5Attempts = (studentData.level5Attempts || 0) + 1;
-        const q1 = document.getElementById('l5-q1').value;
-        const q2 = document.getElementById('l5-q2').value;
-
-        if(q1 === '100' && q2 === '200') {
-            showNotification('🎉 答對了！你學會計算圖檔大小了！');
-            levelUnlocked[5] = true;
-            updateControls();
-            setTimeout(() => changeLevel(1), 1200);
-        } else {
-            showNotification('❌ 計算錯誤，請再套用公式想想看！(提示: 10×10=100)', false);
-        }
-    }
-
-    // --- 關卡切換邏輯 ---
-    function updateControls() {
-        if (currentLevel === 0) {
-            document.getElementById('bottom-controls').style.display = 'none';
-            document.getElementById('level-indicator').textContent = '準備中...';
-            return;
-        } else {
-            document.getElementById('bottom-controls').style.display = 'flex';
-            document.getElementById('level-indicator').textContent = `Level ${currentLevel}/${maxLevels}`;
-        }
-
-        document.getElementById('prevBtn').style.display = currentLevel > 1 ? 'block' : 'none';
+        // --- 學習紀錄變數 (被封裝保護) ---
+        let studentData = {
+            classId: '', seatNum: '', name: '',
+            startTime: null, endTime: null,
+            level1Attempts: 0, level2Attempts: 0, level3Attempts: 0,
+            level4Attempts: 0, level5Attempts: 0, 
+            finalCode: ''
+        };
         
-        const nextBtn = document.getElementById('nextBtn');
-        if (currentLevel < maxLevels) {
-            nextBtn.style.display = 'block';
-            if (levelUnlocked[currentLevel]) {
-                nextBtn.classList.remove('btn-yellow');
-                nextBtn.textContent = '下一關 ➡️';
-                nextBtn.disabled = false;
-                nextBtn.style.opacity = 1;
+        // 已更新為指定的 GAS 網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyOs4gl4IVW-TA6d-KfLEPVSk8O1ZP07DZ8uPDCKYk2a4m1_GBGPcftWlPgZBO2XQ45/exec"; 
+
+        // --- 答案加密邏輯 (XOR Hash) ---
+        // 將學生的輸入轉為 Hash 值做比對，HTML 與 JS 中不再出現明文答案
+        const verifyHash = (inputStr, expectedHash) => {
+            const hash = String(inputStr).split('').map(c => c.charCodeAt(0) ^ 42).join(',');
+            return hash === expectedHash;
+        };
+
+        // --- UI 共用邏輯 ---
+        const showNotification = (msg, isSuccess = true) => {
+            const notif = document.getElementById('notification');
+            notif.textContent = msg;
+            notif.style.background = isSuccess ? 'var(--primary-green)' : 'var(--primary-red)';
+            notif.style.color = 'white';
+            notif.style.display = 'block';
+            setTimeout(() => { notif.style.display = 'none'; }, 2000);
+        };
+
+        const updateControls = () => {
+            if (currentLevel === 0) {
+                document.getElementById('bottom-controls').style.display = 'none';
+                document.getElementById('level-indicator').textContent = '準備中...';
+                return;
             } else {
-                nextBtn.textContent = '🔒 請先答對題目';
-                nextBtn.classList.add('btn-yellow');
+                document.getElementById('bottom-controls').style.display = 'flex';
+                document.getElementById('level-indicator').textContent = `Level ${currentLevel}/${maxLevels}`;
             }
-        } else {
-            nextBtn.style.display = 'none';
-        }
-        document.getElementById('level-indicator').textContent = `Level ${currentLevel}/${maxLevels}`;
-    }
 
-    function changeLevel(dir) {
-        if (dir === 1 && !levelUnlocked[currentLevel]) {
-            showNotification('🔒 請先完成這個關卡的任務喔！', false);
-            return;
-        }
-
-        document.getElementById(`level${currentLevel}`).classList.remove('active');
-        currentLevel += dir;
-        document.getElementById(`level${currentLevel}`).classList.add('active');
-        updateControls();
-    }
-
-    // --- 送出學習紀錄至 GAS ---
-    function submitToGAS() {
-        studentData.endTime = new Date().toLocaleString();
-        studentData.finalCode = document.getElementById('output-code').dataset.rawCode || '無';
-
-        if(GAS_URL === "在此貼上你的GAS應用程式網址") {
-            showNotification('⚠️ 教師尚未設定 GAS URL，僅在本地記錄', false);
-            console.log("學習紀錄:", studentData);
-            return;
-        }
-
-        showNotification('資料傳送中...', true);
-        
-        fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify(studentData),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.status === 'success') {
-                showNotification('🎉 學習紀錄與作品已成功送出！', true);
-            } else {
-                showNotification('❌ 送出失敗，請通知老師', false);
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            showNotification('❌ 網路錯誤，請檢查連線', false);
-        });
-    }
-
-    // --- Level 6: 動態調色盤 & 像素編輯器 ---
-    const COLS = 18;
-    const ROWS = 13;
-    let currentColorCode = '001'; 
-    let currentColorHex = '#2C3333';
-    let isDrawing = false;
-    const grid = document.getElementById('pixel-grid');
-    const outputArea = document.getElementById('output-code');
-    
-    // 定義 8 種基本色彩的二進位碼 (給 1, 2, 3 bit 共用)
-    const colorPalette = [
-        { hex: '#FFFFFF', name: '白', b1: '0', b2: '00', b3: '000' },
-        { hex: '#2C3333', name: '黑', b1: '1', b2: '01', b3: '001' },
-        { hex: '#FF6B6B', name: '紅', b1: '1', b2: '10', b3: '010' },
-        { hex: '#4D96FF', name: '藍', b1: '0', b2: '11', b3: '011' },
-        { hex: '#6BCB77', name: '綠', b1: '0', b2: '00', b3: '100' },
-        { hex: '#FFD93D', name: '黃', b1: '0', b2: '00', b3: '101' },
-        { hex: '#9D4EDD', name: '紫', b1: '0', b2: '00', b3: '110' },
-        { hex: '#FF9F1C', name: '橘', b1: '0', b2: '00', b3: '111' }
-    ];
-
-    // 根據色彩位元數動態更新調色盤
-    function updatePalette() {
-        const depth = parseInt(document.getElementById('bit-depth-select').value);
-        const numColors = Math.pow(2, depth); // 2^1=2, 2^2=4, 2^3=8
-        const picker = document.getElementById('dynamic-color-picker');
-        picker.innerHTML = '';
-
-        for(let i = 0; i < numColors; i++) {
-            const c = colorPalette[i];
-            let code = depth === 1 ? c.b1 : (depth === 2 ? c.b2 : c.b3);
-
-            const btn = document.createElement('div');
-            btn.className = 'color-btn';
-            btn.style.backgroundColor = c.hex;
-            if(c.hex === '#FFFFFF') btn.style.borderColor = '#ccc'; // 白色加深邊框防看不見
-            btn.title = `${c.name} (${code})`;
+            document.getElementById('btn-prev').style.display = currentLevel > 1 ? 'block' : 'none';
             
-            // 寫入二進位代碼到按鈕中間，根據背景明暗決定文字顏色
-            const textColor = (c.hex === '#FFFFFF' || c.hex === '#FFD93D' || c.hex === '#6BCB77') ? '#2C3333' : '#FFFFFF';
-            btn.innerHTML = `<span style="color: ${textColor}; pointer-events: none;">${code}</span>`;
-
-            btn.onclick = function() { setDynamicColor(code, c.hex, this); };
-
-            // 預設選取黑色或第一個可用的顏色
-            if(i === 1 || (numColors === 1 && i === 0)) {
-                btn.classList.add('selected');
-                currentColorCode = code;
-                currentColorHex = c.hex;
-            }
-            
-            picker.appendChild(btn);
-        }
-        
-        // 切換位元深度時，清空畫布以免出現無效的編碼
-        clearCanvas(); 
-    }
-
-    function setDynamicColor(code, hex, btnElement) {
-        currentColorCode = code;
-        currentColorHex = hex;
-        document.querySelectorAll('#dynamic-color-picker .color-btn').forEach(btn => btn.classList.remove('selected'));
-        btnElement.classList.add('selected');
-    }
-
-    // 建立畫布
-    function initGrid() {
-        grid.innerHTML = '';
-        const depth = parseInt(document.getElementById('bit-depth-select').value);
-        const whiteCode = depth === 1 ? '0' : (depth === 2 ? '00' : '000');
-
-        for (let r = 0; r < ROWS; r++) {
-            for (let c = 0; c < COLS; c++) {
-                const cell = document.createElement('div');
-                cell.classList.add('grid-cell');
-                cell.dataset.r = r;
-                cell.dataset.c = c;
-                cell.dataset.color = whiteCode; // 預設白色代碼
-                cell.style.backgroundColor = '#FFFFFF';
-                
-                // 滑鼠事件
-                cell.addEventListener('mousedown', (e) => {
-                    isDrawing = true;
-                    paintCell(e.target);
-                });
-                cell.addEventListener('mouseenter', (e) => {
-                    if (isDrawing) paintCell(e.target);
-                });
-                
-                // 觸控事件支援
-                cell.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    isDrawing = true;
-                    paintCell(e.target);
-                });
-                cell.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    if (!isDrawing) return;
-                    const touch = e.touches[0];
-                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-                    if (target && target.classList.contains('grid-cell')) {
-                        paintCell(target);
-                    }
-                });
-
-                grid.appendChild(cell);
-            }
-        }
-        
-        window.addEventListener('mouseup', () => { isDrawing = false; });
-        window.addEventListener('touchend', () => { isDrawing = false; });
-        
-        generateRLE(); 
-    }
-
-    function paintCell(cell) {
-        cell.dataset.color = currentColorCode;
-        cell.style.backgroundColor = currentColorHex;
-        generateRLE(); // 每次畫圖即時更新編碼
-    }
-
-    function clearCanvas() {
-        // 先防呆檢查畫布是否已經存在
-        const cells = document.querySelectorAll('.grid-cell');
-        if (cells.length === 0) return;
-
-        const depth = parseInt(document.getElementById('bit-depth-select').value);
-        const whiteCode = depth === 1 ? '0' : (depth === 2 ? '00' : '000');
-            
-        cells.forEach(cell => {
-            cell.dataset.color = whiteCode;
-            cell.style.backgroundColor = '#FFFFFF';
-        });
-        generateRLE();
-        
-        // 避免在剛載入頁面時跳出清空通知
-        if (document.getElementById('level-indicator').textContent !== '準備中...') {
-            showNotification('🗑️ 畫布已清空');
-        }
-    }
-
-    // 核心 RLE 演算法 (已配合二進位碼升級)
-    function generateRLE() {
-        const cells = Array.from(document.querySelectorAll('.grid-cell'));
-        
-        // 防呆：如果畫布還沒建立完成，就不要執行以避免報錯
-        if (cells.length === 0) return;
-
-        let outputHTML = '';
-        let exportText = '';
-        
-        // 取得目前白色的代碼，方便呈現「全白」提示
-        const depth = parseInt(document.getElementById('bit-depth-select').value);
-        const whiteCode = depth === 1 ? '0' : (depth === 2 ? '00' : '000');
-
-        for (let r = 0; r < ROWS; r++) {
-            let rowCodeStr = '';
-            let count = 0;
-            let prevColor = null;
-            
-            const rowCells = cells.slice(r * COLS, (r + 1) * COLS);
-            
-            for (let c = 0; c < COLS; c++) {
-                const color = rowCells[c].dataset.color;
-                
-                if (prevColor === null) {
-                    prevColor = color;
-                    count = 1;
-                } else if (color === prevColor) {
-                    count++;
+            const nextBtn = document.getElementById('btn-next');
+            if (currentLevel < maxLevels) {
+                nextBtn.style.display = 'block';
+                if (levelUnlocked[currentLevel]) {
+                    nextBtn.classList.remove('btn-yellow');
+                    nextBtn.textContent = '下一關 ➡️';
+                    nextBtn.disabled = false;
+                    nextBtn.style.opacity = 1;
                 } else {
-                    // 顏色改變，加上括號區隔色彩編碼，例: 4(010)
-                    rowCodeStr += `${count}(${prevColor}) `;
-                    prevColor = color;
-                    count = 1;
+                    nextBtn.textContent = '🔒 請先答對題目';
+                    nextBtn.classList.add('btn-yellow');
+                }
+            } else {
+                nextBtn.style.display = 'none';
+            }
+            document.getElementById('level-indicator').textContent = `Level ${currentLevel}/${maxLevels}`;
+        };
+
+        const changeLevel = (dir) => {
+            if (dir === 1 && !levelUnlocked[currentLevel]) {
+                showNotification('🔒 請先完成這個關卡的任務喔！', false);
+                return;
+            }
+            document.getElementById(`level${currentLevel}`).classList.remove('active');
+            currentLevel += dir;
+            document.getElementById(`level${currentLevel}`).classList.add('active');
+            updateControls();
+        };
+
+        // --- 編輯器相關變數與函數 ---
+        const COLS = 18;
+        const ROWS = 13;
+        let currentColorCode = '001'; 
+        let currentColorHex = '#2C3333';
+        let isDrawing = false;
+        
+        const colorPalette = [
+            { hex: '#FFFFFF', name: '白', b1: '0', b2: '00', b3: '000' },
+            { hex: '#2C3333', name: '黑', b1: '1', b2: '01', b3: '001' },
+            { hex: '#FF6B6B', name: '紅', b1: '1', b2: '10', b3: '010' },
+            { hex: '#4D96FF', name: '藍', b1: '0', b2: '11', b3: '011' },
+            { hex: '#6BCB77', name: '綠', b1: '0', b2: '00', b3: '100' },
+            { hex: '#FFD93D', name: '黃', b1: '0', b2: '00', b3: '101' },
+            { hex: '#9D4EDD', name: '紫', b1: '0', b2: '00', b3: '110' },
+            { hex: '#FF9F1C', name: '橘', b1: '0', b2: '00', b3: '111' }
+        ];
+
+        const generateRLE = () => {
+            const grid = document.getElementById('pixel-grid');
+            if (!grid) return;
+            const cells = Array.from(grid.querySelectorAll('.grid-cell'));
+            if (cells.length === 0) return;
+
+            const outputArea = document.getElementById('output-code');
+            let outputHTML = '';
+            let exportText = '';
+            
+            const depth = parseInt(document.getElementById('bit-depth-select').value);
+            const whiteCode = depth === 1 ? '0' : (depth === 2 ? '00' : '000');
+
+            for (let r = 0; r < ROWS; r++) {
+                let rowCodeStr = '';
+                let count = 0;
+                let prevColor = null;
+                
+                const rowCells = cells.slice(r * COLS, (r + 1) * COLS);
+                
+                for (let c = 0; c < COLS; c++) {
+                    const color = rowCells[c].dataset.color;
+                    if (prevColor === null) {
+                        prevColor = color;
+                        count = 1;
+                    } else if (color === prevColor) {
+                        count++;
+                    } else {
+                        rowCodeStr += `${count}(${prevColor}) `;
+                        prevColor = color;
+                        count = 1;
+                    }
+                }
+                rowCodeStr += `${count}(${prevColor})`;
+                
+                if (rowCodeStr === `${COLS}(${whiteCode})`) {
+                     outputHTML += `<div>Row ${String(r+1).padStart(2,'0')}: <span style="color:#555">${COLS}(${whiteCode}) - 全白</span></div>`;
+                } else {
+                     outputHTML += `<div>Row ${String(r+1).padStart(2,'0')}: <strong style="color:var(--primary-yellow)">${rowCodeStr}</strong></div>`;
+                }
+                exportText += `Row ${r+1}: ${rowCodeStr}\n`;
+            }
+            outputArea.innerHTML = outputHTML;
+            outputArea.dataset.rawCode = exportText;
+        };
+
+        const paintCell = (cell) => {
+            cell.dataset.color = currentColorCode;
+            cell.style.backgroundColor = currentColorHex;
+            generateRLE();
+        };
+
+        const setDynamicColor = (code, hex, btnElement) => {
+            currentColorCode = code;
+            currentColorHex = hex;
+            document.querySelectorAll('#dynamic-color-picker .color-btn').forEach(btn => btn.classList.remove('selected'));
+            btnElement.classList.add('selected');
+        };
+
+        const clearCanvas = () => {
+            const cells = document.querySelectorAll('.grid-cell');
+            if (cells.length === 0) return;
+            const depth = parseInt(document.getElementById('bit-depth-select').value);
+            const whiteCode = depth === 1 ? '0' : (depth === 2 ? '00' : '000');
+            cells.forEach(cell => {
+                cell.dataset.color = whiteCode;
+                cell.style.backgroundColor = '#FFFFFF';
+            });
+            generateRLE();
+            if (document.getElementById('level-indicator').textContent !== '準備中...') {
+                showNotification('🗑️ 畫布已清空');
+            }
+        };
+
+        const updatePalette = () => {
+            const depth = parseInt(document.getElementById('bit-depth-select').value);
+            const numColors = Math.pow(2, depth);
+            const picker = document.getElementById('dynamic-color-picker');
+            picker.innerHTML = '';
+
+            for(let i = 0; i < numColors; i++) {
+                const c = colorPalette[i];
+                let code = depth === 1 ? c.b1 : (depth === 2 ? c.b2 : c.b3);
+                const btn = document.createElement('div');
+                btn.className = 'color-btn';
+                btn.style.backgroundColor = c.hex;
+                if(c.hex === '#FFFFFF') btn.style.borderColor = '#ccc';
+                btn.title = `${c.name} (${code})`;
+                
+                const textColor = (c.hex === '#FFFFFF' || c.hex === '#FFD93D' || c.hex === '#6BCB77') ? '#2C3333' : '#FFFFFF';
+                btn.innerHTML = `<span style="color: ${textColor}; pointer-events: none;">${code}</span>`;
+
+                btn.addEventListener('click', function() { setDynamicColor(code, c.hex, this); });
+
+                if(i === 1 || (numColors === 1 && i === 0)) {
+                    btn.classList.add('selected');
+                    currentColorCode = code;
+                    currentColorHex = c.hex;
+                }
+                picker.appendChild(btn);
+            }
+            clearCanvas(); 
+        };
+
+        const initGrid = () => {
+            const grid = document.getElementById('pixel-grid');
+            grid.innerHTML = '';
+            const depth = parseInt(document.getElementById('bit-depth-select').value);
+            const whiteCode = depth === 1 ? '0' : (depth === 2 ? '00' : '000');
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+                    cell.dataset.color = whiteCode;
+                    cell.style.backgroundColor = '#FFFFFF';
+                    
+                    cell.addEventListener('mousedown', (e) => { isDrawing = true; paintCell(e.target); });
+                    cell.addEventListener('mouseenter', (e) => { if (isDrawing) paintCell(e.target); });
+                    
+                    cell.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        isDrawing = true;
+                        paintCell(e.target);
+                    });
+                    cell.addEventListener('touchmove', (e) => {
+                        e.preventDefault();
+                        if (!isDrawing) return;
+                        const touch = e.touches[0];
+                        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                        if (target && target.classList.contains('grid-cell')) {
+                            paintCell(target);
+                        }
+                    });
+                    grid.appendChild(cell);
                 }
             }
-            // 加上最後一段
-            rowCodeStr += `${count}(${prevColor})`;
+            window.addEventListener('mouseup', () => { isDrawing = false; });
+            window.addEventListener('touchend', () => { isDrawing = false; });
+            generateRLE(); 
+        };
+
+        // --- 當網頁載入完成後綁定所有事件 ---
+        window.addEventListener('DOMContentLoaded', () => {
             
-            // 如果整行都是白色，顯示空白提醒
-            if (rowCodeStr === `${COLS}(${whiteCode})`) {
-                 outputHTML += `<div>Row ${String(r+1).padStart(2,'0')}: <span style="color:#555">${COLS}(${whiteCode}) - 全白</span></div>`;
-            } else {
-                 outputHTML += `<div>Row ${String(r+1).padStart(2,'0')}: <strong style="color:var(--primary-yellow)">${rowCodeStr}</strong></div>`;
-            }
-            exportText += `Row ${r+1}: ${rowCodeStr}\n`;
-        }
-        
-        outputArea.innerHTML = outputHTML;
-        outputArea.dataset.rawCode = exportText;
-    }
+            // 登入綁定
+            document.getElementById('btn-start').addEventListener('click', () => {
+                const cls = document.getElementById('student-class').value;
+                const num = document.getElementById('student-number').value;
+                const name = document.getElementById('student-name').value;
+                if(!cls || !num || !name) {
+                    showNotification('📝 請填寫完整班級、座號與姓名喔！', false);
+                    return;
+                }
+                studentData.classId = cls;
+                studentData.seatNum = num;
+                studentData.name = name;
+                studentData.startTime = new Date().toLocaleString();
 
-    function exportData() {
-        const text = document.getElementById('output-code').dataset.rawCode;
-        navigator.clipboard.writeText(text).then(() => {
-            showNotification('💾 編碼已複製到剪貼簿！');
-        }).catch(err => {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand("copy");
-            document.body.removeChild(textArea);
-            showNotification('💾 編碼已複製到剪貼簿！');
+                document.getElementById('level0').classList.remove('active');
+                currentLevel = 1;
+                document.getElementById('level1').classList.add('active');
+                updateControls();
+                showNotification(`歡迎勇者 ${name}！探險開始！`);
+            });
+
+            // 縮放綁定
+            let isZoomed = false;
+            document.getElementById('btn-zoom').addEventListener('click', () => {
+                const img = document.getElementById('demoImg');
+                isZoomed = !isZoomed;
+                if(isZoomed) {
+                    img.classList.add('zoomed');
+                } else {
+                    img.classList.remove('zoomed');
+                }
+            });
+
+            // L1 ~ L3 選擇題綁定 (搭配隱藏 Hash 驗證)
+            document.querySelectorAll('.quiz-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const level = parseInt(e.currentTarget.dataset.level);
+                    const ans = e.currentTarget.dataset.ans;
+
+                    studentData[`level${level}Attempts`] = (studentData[`level${level}Attempts`] || 0) + 1;
+                    // 正確答案 
+                    if (verifyHash(ans, "104")) {
+                        showNotification('🎉 答對了！太厲害了！');
+                        levelUnlocked[level] = true;
+                        updateControls();
+                        setTimeout(() => {
+                            if(currentLevel < maxLevels) changeLevel(1);
+                        }, 1000);
+                    } else {
+                        showNotification('❌ 哎呀，再想一下喔！', false);
+                    }
+                });
+            });
+
+            // L4 驗證綁定
+            document.getElementById('btn-check-l4').addEventListener('click', () => {
+                studentData.level4Attempts = (studentData.level4Attempts || 0) + 1;
+                const vals = [
+                    document.getElementById('l4-r1').value.replace(/\s+/g, ''),
+                    document.getElementById('l4-r2').value.replace(/\s+/g, ''),
+                    document.getElementById('l4-r3').value.replace(/\s+/g, ''),
+                    document.getElementById('l4-r4').value.replace(/\s+/g, ''),
+                    document.getElementById('l4-r5').value.replace(/\s+/g, ''),
+                    document.getElementById('l4-r6').value.replace(/\s+/g, '')
+                ];
+                // 正確答案
+                const expectedHashL4 = "27,6,30,6,27,86,27,6,27,6,24,6,27,6,27,86,27,6,30,6,27,86,24,6,24,6,24,86,28,86,28";
+                
+                if (verifyHash(vals.join('|'), expectedHashL4)) {
+                    showNotification('🎉 答對了！你完全掌握了解碼技巧！');
+                    levelUnlocked[4] = true;
+                    updateControls();
+                    setTimeout(() => changeLevel(1), 1200);
+                } else {
+                    showNotification('❌ 哎呀，有幾行的密碼不太對，再檢查一下喔！', false);
+                }
+            });
+
+            // L5 驗證綁定
+            document.getElementById('btn-check-l5').addEventListener('click', () => {
+                studentData.level5Attempts = (studentData.level5Attempts || 0) + 1;
+                const combined = `${document.getElementById('l5-q1').value}|${document.getElementById('l5-q2').value}`;
+                // 正確答案：
+                if (verifyHash(combined, "27,26,26,86,24,26,26")) {
+                    showNotification('🎉 答對了！你學會計算圖檔大小了！');
+                    levelUnlocked[5] = true;
+                    updateControls();
+                    setTimeout(() => changeLevel(1), 1200);
+                } else {
+                    showNotification('❌ 計算錯誤，請再套用公式想想看！(提示: 10×10=100)', false);
+                }
+            });
+
+            // L6 編輯器綁定
+            document.getElementById('bit-depth-select').addEventListener('change', updatePalette);
+            document.getElementById('btn-clear').addEventListener('click', clearCanvas);
+            
+            document.getElementById('btn-export').addEventListener('click', () => {
+                const text = document.getElementById('output-code').dataset.rawCode;
+                navigator.clipboard.writeText(text).then(() => {
+                    showNotification('💾 編碼已複製到剪貼簿！');
+                }).catch(err => {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(textArea);
+                    showNotification('💾 編碼已複製到剪貼簿！');
+                });
+            });
+
+            // 提交 GAS 綁定
+            document.getElementById('btn-submit').addEventListener('click', () => {
+                studentData.endTime = new Date().toLocaleString();
+                studentData.finalCode = document.getElementById('output-code').dataset.rawCode || '無';
+
+                showNotification('資料傳送中...', true);
+                
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(studentData),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        showNotification('🎉 學習紀錄與作品已成功送出！', true);
+                    } else {
+                        showNotification('❌ 送出失敗，請通知老師', false);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showNotification('❌ 網路錯誤，請檢查連線', false);
+                });
+            });
+
+            // 導覽列綁定
+            document.getElementById('btn-prev').addEventListener('click', () => changeLevel(-1));
+            document.getElementById('btn-next').addEventListener('click', () => changeLevel(1));
+
+            // 初始化與啟動
+            initGrid();      
+            updatePalette(); 
+            updateControls();
         });
-    }
-
-    // 初始化
-    window.onload = () => {
-        // 先建立畫布(.grid-cell)，確保 DOM 元素存在
-        initGrid();      
-        // 再建立動態調色盤，此時會觸發 clearCanvas -> generateRLE 就不會報錯了
-        updatePalette(); 
-        updateControls();
-    };
-
+    })();
 </script>
 </body>
 </html>
